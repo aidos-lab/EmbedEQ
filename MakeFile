@@ -1,0 +1,18 @@
+#Makefile
+include .env
+
+
+run: embeddings homology
+	@echo "Run Complete"
+
+embeddings:
+	@echo "Generating Embeddings"
+	@python scripts/embedding_generator.py
+
+homology:
+	@echo "Generating Persistence Diagrams"
+	@python scripts/homology_generator.py
+
+clustering:
+	@echo "Generating Persistence Diagrams"
+	@python src/clustering.py
