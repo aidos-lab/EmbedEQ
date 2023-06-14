@@ -1,0 +1,125 @@
+"Project cleaned data using UMAP."
+
+import argparse
+import json
+import logging
+import os
+import subprocess
+import sys
+import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+from dotenv import load_dotenv
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+from tqdm import tqdm
+from umap import UMAP
+
+
+from utils import parameter_coordinates
+
+######################################################################
+# Silencing UMAP Warnings
+import warnings
+
+from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
+from umap import UMAP
+
+warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
+warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module="umap")
+
+os.environ["KMP_WARNINGS"] = "off"
+######################################################################")
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    logging.basicConfig(
+        format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+    )
+    load_dotenv()
+    JSON_PATH = os.getenv("params")
+    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
+    with open(JSON_PATH, "r") as f:
+        params_json = json.load(f)
+
+    parser.add_argument(
+        "-d",
+        "--data",
+        type=str,
+        default=params_json["data_set"],
+        help="Specify the data set.",
+    )
+
+    parser.add_argument(
+        "-n",
+        "--num_samples",
+        default=params_json["num_samples"],
+        type=int,
+        help="Set number of samples in data set",
+    )
+
+    parser.add_argument(
+        "--projector",
+        type=str,
+        default=params_json["projector"],
+        help="Set to the name of projector for dimensionality reduction. ",
+    )
+
+    parser.add_argument(
+        "--hyperparams",
+        default=params_json["hyperparams"],
+        type=dict,
+        help="Hyper parameters",
+    )
+
+    parser.add_argument(
+        "-v",
+        "--Verbose",
+        default=False,
+        action="store_true",
+        help="If set, will print messages detailing computation and output.",
+    )
+
+    args = parser.parse_args()
+    this = sys.modules[__name__]
+
+    logging.info(f"Data set: {args.data}")
+    logging.info(f"Number of samples: {args.num_samples}")
+    logging.info(f"Choice of Projector: {args.projector}")
+
+    logging.info(f"Hyperparameters: {args.hyperparams}")
+    parameter_space = parameter_coordinates(args.hyperparams, embedding=args.projector)
+
+    # Write Coordinates to JSON
+    params_json["coordinates"] = parameter_space
+    with open(JSON_PATH, "w") as f:
+        json.dump(params_json, f, indent=4)
+
+    # Subprocesses
+    num_loops = len(parameter_space)
+
+    # Running Grid Search in Parallel
+    subprocesses = []
+    ## GRID SEARCH PROJECTIONS
+    for i, coord in enumerate(parameter_space):
+        cmd = [
+            "python",
+            "projector.py",
+            f"-i {i}",
+        ]
+        subprocesses.append(cmd)
+
+    # Running processes in Parallel
+    # TODO: optimize based on max_workers
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(subprocess.run, cmd) for cmd in subprocesses]
+        # Setting Progress bar to track number of completed subprocesses
+        progress_bar = tqdm(total=num_loops, desc="Progress", unit="subprocess")
+        for future in as_completed(futures):
+            # Update the progress bar for each completed subprocess
+            progress_bar.update(1)
+    progress_bar.close()
