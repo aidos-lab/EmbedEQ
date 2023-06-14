@@ -12,28 +12,25 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dotenv import load_dotenv
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 from tqdm import tqdm
-from umap import UMAP
 
-
-from utils import parameter_coordinates
 
 ######################################################################
 # Silencing UMAP Warnings
 import warnings
-
-from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
-from umap import UMAP
 
 warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
 warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning, module="umap")
 
 os.environ["KMP_WARNINGS"] = "off"
+
+from umap import UMAP
+
+
 ######################################################################")
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     logging.basicConfig(
         format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
@@ -41,6 +38,10 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
     load_dotenv()
+    root = os.getenv("root")
+    sys.path.append(root + "src")
+    from utils import parameter_coordinates
+
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
     with open(JSON_PATH, "r") as f:
@@ -102,13 +103,14 @@ if __name__ == "__main__":
     # Subprocesses
     num_loops = len(parameter_space)
 
+    projector = os.path.join(root, "src/projector.py")
     # Running Grid Search in Parallel
     subprocesses = []
     ## GRID SEARCH PROJECTIONS
     for i, coord in enumerate(parameter_space):
         cmd = [
             "python",
-            "projector.py",
+            f"{projector}",
             f"-i {i}",
         ]
         subprocesses.append(cmd)
