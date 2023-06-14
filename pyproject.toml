@@ -16,6 +16,8 @@ numpy = "^1.24.3"
 scikit-learn = "^1.2.2"
 python-dotenv = "^1.0.0"
 numba = "^0.57.0"
+make = "^0.1.6.post2"
+giotto-tda = "^0.6.0"
 
 
 [build-system]
