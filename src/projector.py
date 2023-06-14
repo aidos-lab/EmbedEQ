@@ -9,9 +9,8 @@ import pickle
 import logging
 
 from dotenv import load_dotenv
-from umap import UMAP
 
-import embeddings
+import methods
 import data
 
 ######################################################################
@@ -19,7 +18,7 @@ import data
 import warnings
 
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
-from umap import UMAP
+
 
 warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
 warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
@@ -27,6 +26,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="umap")
 
 os.environ["KMP_WARNINGS"] = "off"
 ######################################################################")
+from umap import UMAP
 
 
 if __name__ == "__main__":
@@ -81,12 +81,12 @@ if __name__ == "__main__":
 
     X, C = generator(N=args.num_samples)
     hyperparams = params_json["coordinates"][args.i]
-    embedding = getattr(embeddings, args.projector)
+    embedding = getattr(methods, args.projector)
     logging.info(f"Using embedding routine {embedding}")
     projection = embedding(X, hyperparams)
 
     out_file = f"{args.projector}_{args.i}.pkl"
-    output_dir = os.path.join(
+    out_dir = os.path.join(
         root,
         "data/"
         + params_json["data_set"]
@@ -95,23 +95,21 @@ if __name__ == "__main__":
         + "/",
     )
 
-    if not os.path.isdir(output_dir):
-        os.makedirs(output_dir, exist_ok=True)
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
 
     results = {"projection": projection, "hyperparams": hyperparams}
 
-    out_file = os.path.join(output_dir, out_file)
+    out_file = os.path.join(out_dir, out_file)
     with open(out_file, "wb") as f:
         pickle.dump(results, f)
 
-    if args.Verbose:
+    logging.info(
+        "-------------------------------------------------------------------------------------- \n\n"
+    )
 
-        logging.info(
-            "-------------------------------------------------------------------------------------- \n\n"
-        )
-
-        logging.info(f"Projection Outfile written to {output_dir}")
-        logging.info("\n")
-        logging.info(
-            "-------------------------------------------------------------------------------------- \n\n"
-        )
+    logging.info(f"Projection {args.i} written to {out_dir}")
+    logging.info("\n")
+    logging.info(
+        "-------------------------------------------------------------------------------------- \n\n"
+    )
