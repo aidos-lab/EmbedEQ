@@ -10,23 +10,8 @@ import logging
 
 from dotenv import load_dotenv
 
-import methods
+import embeddings
 import data
-
-######################################################################
-# Silencing UMAP Warnings
-import warnings
-
-from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
-
-
-warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
-warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
-warnings.filterwarnings("ignore", category=UserWarning, module="umap")
-
-os.environ["KMP_WARNINGS"] = "off"
-######################################################################")
-from umap import UMAP
 
 
 if __name__ == "__main__":
@@ -81,7 +66,7 @@ if __name__ == "__main__":
 
     X, C = generator(N=args.num_samples)
     hyperparams = params_json["coordinates"][args.i]
-    embedding = getattr(methods, args.projector)
+    embedding = getattr(embeddings, args.projector)
     logging.info(f"Using embedding routine {embedding}")
     projection = embedding(X, hyperparams)
 

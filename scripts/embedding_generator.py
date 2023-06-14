@@ -14,22 +14,6 @@ from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWa
 from tqdm import tqdm
 
 
-######################################################################
-# Silencing UMAP Warnings
-import warnings
-
-warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
-warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
-warnings.filterwarnings("ignore", category=UserWarning, module="umap")
-
-os.environ["KMP_WARNINGS"] = "off"
-
-from umap import UMAP
-
-
-######################################################################")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     logging.basicConfig(
