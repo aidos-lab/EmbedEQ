@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "embedeq"
+version = "0.1.0"
+description = "Determining hyperparameter equivalency classes for dimensionality reduction algorithms based on the topology of the embedding space."
+authors = ["jeremy.wayland <jeremy.don.wayland@gmail.com>"]
+license = "MIT license"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+cython = "^0.29.35"
+ripser = "^0.6.4"
+black = "^23.3.0"
+umap-learn = "^0.5.3"
+numpy = "^1.24.3"
+scikit-learn = "^1.2.2"
+python-dotenv = "^1.0.0"
+numba = "^0.57.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
