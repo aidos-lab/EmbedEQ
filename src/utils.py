@@ -6,7 +6,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 import numpy as np
-from gtda.diagrams import PairwiseDistance
+
 from scipy.cluster.hierarchy import dendrogram
 
 
@@ -22,19 +22,6 @@ def parameter_coordinates(hyper_params: dict, embedding):
         coordinates = list(itertools.product(N, d, n, m))
 
     return coordinates
-
-
-def pairwise_distance(
-    folder,
-    metric="bottleneck",
-):
-    keys, diagrams = get_diagrams(folder)
-    dgms = convert_to_gtda(diagrams)
-    distance_metric = PairwiseDistance(metric=metric)
-    distance_metric.fit(dgms)
-    distances = distance_metric.transform(dgms)
-
-    return keys, distances
 
 
 def get_diagrams(dir):
@@ -127,6 +114,7 @@ def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
         linkage_matrix,
         p=p,
         distance_sort=True,
+        labels=labels,
         color_threshold=distance_threshold,
     )
     for leaf, leaf_color in zip(plt.gca().get_xticklabels(), d["leaves_color_list"]):
