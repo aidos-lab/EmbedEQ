@@ -1,9 +1,15 @@
 #Makefile
 include .env
+PARAMS_FILE := $(strip $(params))
+PARAMS_JSON := $(shell cat $(PARAMS_FILE))
+DATA_SET := $(shell echo '$(PARAMS_JSON)' | jq -r '.data_set')
 
 
-run: embeddings homology
+run: embeddings vis homology
 	@echo "Run Complete"
+
+vis:
+	@python scripts/visualizations.py
 
 embeddings:
 	@echo "Generating Embeddings"
@@ -14,5 +20,7 @@ homology:
 	@python scripts/homology_generator.py
 
 clustering:
-	@echo "Generating Persistence Diagrams"
+	@echo "Computing Topolical Distances"
 	@python src/clustering.py
+clean:
+	@rm -rf data/${DATA_SET}/
