@@ -6,14 +6,18 @@ import json
 import os
 import sys
 from sklearn.cluster import AgglomerativeClustering
+import numpy as np
 
+import matplotlib.pyplot as plt
 from dotenv import load_dotenv
-from utils import pairwise_distance, plot_dendrogram
+from utils import plot_dendrogram
+from topology import pairwise_distance
 
 
 def cluster_models(
     distances,
     metric,
+    labels=None,
     p=3,
     distance_threshold=0.5,
     plot=True,
@@ -32,7 +36,7 @@ def cluster_models(
     if plot:
         plot_dendrogram(
             model=model,
-            labels=None,
+            labels=labels,
             distance=metric,
             truncate_mode="level",
             p=p,
@@ -95,6 +99,33 @@ if __name__ == "__main__":
 
     keys, distances = pairwise_distance(in_dir, metric=args.metric)
 
+    labels = []
+    coords = []
+    for i, key in enumerate(keys):
+        if type(key) == str:
+            labels.append(key)
+            q = i
+            idx = list(distances[i])
+            idx.pop(i)
+        else:
+            labels.append(key[:2])
+            coords.append(key[:2])
+    coords = np.array(coords)
+
     model = cluster_models(
-        distances, args.metric, distance_threshold=args.dendrogram_cut
+        distances,
+        labels=labels,
+        metric=args.metric,
+        distance_threshold=args.dendrogram_cut,
     )
+
+    cluster_labels = list(model.labels_)
+    cluster_labels.pop(q)
+
+    plt.scatter(
+        coords.T[0],
+        coords.T[1],
+        c=cluster_labels,
+        cmap="viridis",
+    )
+    plt.show()

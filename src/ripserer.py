@@ -4,6 +4,7 @@ import os
 import pickle
 import sys
 import logging
+import data
 
 from dotenv import load_dotenv
 
@@ -64,24 +65,32 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    in_file = f"{args.projector}_{args.i}.pkl"
-    in_dir = os.path.join(
-        root,
-        "data/"
-        + params_json["data_set"]
-        + "/projections/"
-        + params_json["projector"]
-        + "/",
-    )
-    in_file = os.path.join(in_dir, in_file)
-    assert os.path.isfile(in_file), "Invalid Projection"
-
-    with open(in_file, "rb") as f:
-        data = pickle.load(f)
     rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
-    dgms = rips.fit_transform(data["projection"])
+    # Original Space
+    if args.i == -1:
+        generator = getattr(data, args.data)
+        X, C, labels = generator(N=args.num_samples)
+        dgms = rips.fit_transform(X)
+        results = {"diagram": dgms, "hyperparams": "original space"}
 
-    results = {"diagram": dgms, "hyperparams": data["hyperparams"]}
+    else:
+        in_file = f"{args.projector}_{args.i}.pkl"
+        in_dir = os.path.join(
+            root,
+            "data/"
+            + params_json["data_set"]
+            + "/projections/"
+            + params_json["projector"]
+            + "/",
+        )
+        in_file = os.path.join(in_dir, in_file)
+        assert os.path.isfile(in_file), "Invalid Projection"
+
+        with open(in_file, "rb") as f:
+            X = pickle.load(f)
+
+        dgms = rips.fit_transform(X["projection"])
+        results = {"diagram": dgms, "hyperparams": X["hyperparams"]}
 
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(

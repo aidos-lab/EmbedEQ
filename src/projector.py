@@ -64,7 +64,7 @@ if __name__ == "__main__":
     generator = getattr(data, args.data)
     logging.info(f"Using generator routine {generator}")
 
-    X, C = generator(N=args.num_samples)
+    X, C, labels = generator(N=args.num_samples)
     hyperparams = params_json["coordinates"][args.i]
     embedding = getattr(embeddings, args.projector)
     logging.info(f"Using embedding routine {embedding}")
