@@ -104,7 +104,7 @@ if __name__ == "__main__":
     for i, key in enumerate(keys):
         if type(key) == str:
             labels.append(key)
-            q = i
+            original = i
             idx = list(distances[i])
             idx.pop(i)
         else:
@@ -120,12 +120,13 @@ if __name__ == "__main__":
     )
 
     cluster_labels = list(model.labels_)
-    cluster_labels.pop(q)
+    N = len(cluster_labels)
+    tokens = {}
+    for label in cluster_labels:
+        mask = np.where(cluster_labels == label, True, False)
+        idxs = np.array(range(N))[mask]
+        # Min Distance from original space
+        i = np.argmin(distances[original][idxs])
+        tokens[label] = keys[i]
 
-    plt.scatter(
-        coords.T[0],
-        coords.T[1],
-        c=cluster_labels,
-        cmap="viridis",
-    )
-    plt.show()
+    print(tokens)

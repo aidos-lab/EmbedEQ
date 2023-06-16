@@ -5,7 +5,7 @@ PARAMS_JSON := $(shell cat $(PARAMS_FILE))
 DATA_SET := $(shell echo '$(PARAMS_JSON)' | jq -r '.data_set')
 
 
-run: embeddings vis homology
+run: embeddings vis homology clustering
 	@echo "Run Complete"
 
 vis:
@@ -17,6 +17,7 @@ embeddings:
 
 homology:
 	@echo "Generating Persistence Diagrams"
+	@ python src/ripserer.py -i -1
 	@python scripts/homology_generator.py
 
 clustering:
