@@ -1,12 +1,13 @@
 "Utility functions."
 
 import itertools
+import json
 import os
 import pickle
+from dotenv import load_dotenv
+
 import matplotlib.pyplot as plt
-
 import numpy as np
-
 from scipy.cluster.hierarchy import dendrogram
 
 
@@ -93,7 +94,11 @@ def convert_to_gtda(diagrams):
 
 def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
     """Create linkage matrix and then plot the dendrogram for Hierarchical clustering."""
-
+    load_dotenv()
+    JSON_PATH = os.getenv("params")
+    if os.path.isfile(JSON_PATH):
+        with open(JSON_PATH, "r") as f:
+            params_json = json.load(f)
     counts = np.zeros(model.children_.shape[0])
     n_samples = len(model.labels_)
     for i, merge in enumerate(model.children_):
@@ -117,6 +122,8 @@ def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
         labels=labels,
         color_threshold=distance_threshold,
     )
+    if params_json["normalize"]:
+        distance = "normalized " + distance
     for leaf, leaf_color in zip(plt.gca().get_xticklabels(), d["leaves_color_list"]):
         leaf.set_color(leaf_color)
     plt.title(f"Persistence Diagrams Clustering")

@@ -9,6 +9,7 @@ import data
 from dotenv import load_dotenv
 
 import ripser
+from sklearn.metrics import pairwise_distances
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -70,8 +71,12 @@ if __name__ == "__main__":
     if args.i == -1:
         generator = getattr(data, args.data)
         X, C, labels = generator(N=args.num_samples)
+
+        D = pairwise_distances(X).max()
+        if params_json["normalize"]:
+            X /= D
         dgms = rips.fit_transform(X)
-        results = {"diagram": dgms, "hyperparams": "original space"}
+        results = {"diagram": dgms, "diameter": D, "hyperparams": "original space"}
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
@@ -88,9 +93,11 @@ if __name__ == "__main__":
 
         with open(in_file, "rb") as f:
             X = pickle.load(f)
-
+        D = pairwise_distances(X["projection"]).max()
+        if params_json["normalize"]:
+            X["projection"] /= D
         dgms = rips.fit_transform(X["projection"])
-        results = {"diagram": dgms, "hyperparams": X["hyperparams"]}
+        results = {"diagram": dgms, "diameter": D, "hyperparams": X["hyperparams"]}
 
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(
