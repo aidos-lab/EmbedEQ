@@ -5,11 +5,12 @@ PARAMS_JSON := $(shell cat $(PARAMS_FILE))
 DATA_SET := $(shell echo '$(PARAMS_JSON)' | jq -r '.data_set')
 
 
-run: embeddings vis homology clustering
+run: embeddings homology clustering vis
 	@echo "Run Complete"
 
 vis:
-	@python scripts/visualizations.py
+	@python scripts/embedding_visualizations.py
+	@python scripts/clustering_visualizations.py
 
 embeddings:
 	@echo "Generating Embeddings"

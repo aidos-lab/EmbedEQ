@@ -160,7 +160,7 @@ if __name__ == "__main__":
     projection_figure = visualize_umaps(in_dir, labels)
     data_figure = visualize_data(X, labels)
 
-    out_file = f"visual_summary.html"
+    out_file = "embedding_summary.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
 
     if not os.path.isdir(out_dir):

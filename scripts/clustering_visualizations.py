@@ -15,7 +15,7 @@ import plotly.figure_factory as ff
 import plotly.io as pio
 from dotenv import load_dotenv
 from plotly.subplots import make_subplots
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform, pdist
 
 
@@ -149,13 +149,14 @@ def visualize_data(X, labels):
 
 
 def visualize_dendrogram(labels, distances, metric):
-    def diagram_distance(X):
+    def diagram_distance(_):
         return squareform(distances)
 
     fig = ff.create_dendrogram(
-        np.arange(0, len(distances)),
+        distances,
         labels=labels,
         distfun=diagram_distance,
+        linkagefun=lambda x: linkage(x, params_json["linkage"]),
         color_threshold=params_json["dendrogram_cut"],
     )
     fig.update_layout(
@@ -219,7 +220,13 @@ if __name__ == "__main__":
         default=params_json["diagram_metric"],
         help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
     )
-
+    parser.add_argument(
+        "-l",
+        "--linkage",
+        type=str,
+        default=params_json["linkage"],
+        help="Select linkage algorithm for building Agglomerative Clustering Model.",
+    )
     parser.add_argument(
         "-c",
         "--dendrogram_cut",
@@ -281,7 +288,7 @@ if __name__ == "__main__":
         + "/EQC/"
         + params_json["projector"]
         + "/models/"
-        + f"embedding_clustering_{metric}_{args.dendrogram_cut}.pkl",
+        + f"embedding_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl",
     )
 
     with open(distances_in_file, "rb") as D:
@@ -317,23 +324,17 @@ if __name__ == "__main__":
         i = np.argmin(distances[original][idxs])
         tokens[label] = keys[i]
 
-    dendo = plot_dendrogram(
-        model=model,
-        labels=labels,
-        distance=metric,
-        truncate_mode="level",
-        p=10,
-        distance_threshold=args.dendrogram_cut,
-    )
-    plt.show()
     generator = getattr(data, params_json["data_set"])
 
     X, C, colors = generator(N=params_json["num_samples"])
 
     projection_figure = visualize_clustered_umaps(projections_dir, colors)
+
+    # TODO: Plotly dendrogram reporting incorrect clustering
     plotly_dendo = visualize_dendrogram(
         labels=plotly_labels, distances=distances, metric=metric
     )
+
     data_fig = visualize_data(X, colors)
 
     out_file = "equivalence_classes.html"
