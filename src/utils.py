@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram
+
 
 
 def parameter_coordinates(hyper_params: dict, embedding):

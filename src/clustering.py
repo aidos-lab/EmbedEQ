@@ -76,6 +76,13 @@ if __name__ == "__main__":
         default=params_json["dendrogram_cut"],
         help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
     )
+    parser.add_argument(
+        "-n",
+        "--normalize",
+        default=params_json["normalize"],
+        type=bool,
+        help="Whether to use normalized topological distances.",
+    )
 
     parser.add_argument(
         "-v",
@@ -90,50 +97,52 @@ if __name__ == "__main__":
 
     in_dir = os.path.join(
         root,
-        "data/" + params_json["data_set"] + "/diagrams/",
+        "data/"
+        + params_json["data_set"]
+        + "/diagrams/"
+        + params_json["projector"]
+        + "/",
+    )
+    out_dir = os.path.join(
+        root,
+        "data/" + params_json["data_set"] + "/EQC/" + params_json["projector"] + "/",
     )
 
+    if args.normalize:
+        metric = f"normalized_{args.metric}"
+
+    # TOPOLOGICAL DISTANCES #
     keys, distances = pairwise_distance(in_dir, metric=args.metric)
+    distance_matrix = {"keys": keys, "distances": distances}
+    distances_out_dir = os.path.join(out_dir, "distance_matrices")
+    if not os.path.isdir(distances_out_dir):
+        os.makedirs(distances_out_dir, exist_ok=True)
+    distances_out_file = f"{metric}_pairwise_distances.pkl"
+    distances_out_file = os.path.join(distances_out_dir, distances_out_file)
+    with open(distances_out_file, "wb") as f:
+        pickle.dump(distance_matrix, f)
 
-    labels = []
-    coords = []
-    for i, key in enumerate(keys):
-        if type(key) == str:
-            labels.append(key)
-            original = i
-            idx = list(distances[i])
-            idx.pop(i)
-        else:
-            labels.append(key[:2])
-            coords.append(key[:2])
-    coords = np.array(coords)
-
+    # HIERARCHICHAL CLUSTERING #
     model = cluster_models(
         distances,
         linkage=args.linkage,
         distance_threshold=args.dendrogram_cut,
     )
-
-    out_file = f"embedding_clustering_{args.metric}_{args.dendrogram_cut}.pkl"
-    out_dir = os.path.join(
-        root,
-        "data/"
-        + params_json["data_set"]
-        + "/clusterings/"
-        + params_json["projector"]
-        + "/",
-    )
-
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
-
     results = {
         "model": model,
-        "hyperparams": {"metric": args.metric, "cut": args.dendrogram_cut},
+        "hyperparams": {
+            "metric": metric,
+            "cut": args.dendrogram_cut,
+            "linkage": args.linkage,
+        },
     }
+    model_out_dir = os.path.join(out_dir, "models")
+    if not os.path.isdir(model_out_dir):
+        os.makedirs(model_out_dir, exist_ok=True)
+    model_out_file = f"embedding_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl"
+    model_out_file = os.path.join(model_out_dir, model_out_file)
 
-    out_file = os.path.join(out_dir, out_file)
-    with open(out_file, "wb") as f:
+    with open(model_out_file, "wb") as f:
         pickle.dump(results, f)
 
     logging.info(

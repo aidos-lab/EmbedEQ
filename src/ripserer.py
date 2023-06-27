@@ -102,7 +102,11 @@ if __name__ == "__main__":
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(
         root,
-        "data/" + params_json["data_set"] + "/diagrams/",
+        "data/"
+        + params_json["data_set"]
+        + "/diagrams/"
+        + params_json["projector"]
+        + "/",
     )
 
     if not os.path.isdir(out_dir):
