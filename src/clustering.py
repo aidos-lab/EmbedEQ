@@ -3,45 +3,33 @@
 
 import argparse
 import json
+import logging
 import os
+import pickle
 import sys
-from sklearn.cluster import AgglomerativeClustering
-import numpy as np
 
 import matplotlib.pyplot as plt
+import numpy as np
 from dotenv import load_dotenv
-from utils import plot_dendrogram
+from sklearn.cluster import AgglomerativeClustering
+
 from topology import pairwise_distance
 
 
 def cluster_models(
     distances,
-    metric,
-    labels=None,
-    p=3,
+    linkage="average",
     distance_threshold=0.5,
-    plot=True,
 ):
 
     model = AgglomerativeClustering(
         metric="precomputed",
-        linkage="average",
+        linkage=linkage,
         compute_distances=True,
         distance_threshold=distance_threshold,
         n_clusters=None,
     )
     model.fit(distances)
-
-    # What percentage of Labels do you want to visualize?
-    if plot:
-        plot_dendrogram(
-            model=model,
-            labels=labels,
-            distance=metric,
-            truncate_mode="level",
-            p=p,
-            distance_threshold=distance_threshold,
-        )
 
     return model
 
@@ -71,6 +59,14 @@ if __name__ == "__main__":
         type=str,
         default=params_json["diagram_metric"],
         help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--linkage",
+        type=str,
+        default=params_json["linkage"],
+        help="Select linkage algorithm for building Agglomerative Clustering Model.",
     )
 
     parser.add_argument(
@@ -114,19 +110,40 @@ if __name__ == "__main__":
 
     model = cluster_models(
         distances,
-        labels=labels,
-        metric=args.metric,
+        linkage=args.linkage,
         distance_threshold=args.dendrogram_cut,
     )
 
-    cluster_labels = list(model.labels_)
-    N = len(cluster_labels)
-    tokens = {}
-    for label in cluster_labels:
-        mask = np.where(cluster_labels == label, True, False)
-        idxs = np.array(range(N))[mask]
-        # Min Distance from original space
-        i = np.argmin(distances[original][idxs])
-        tokens[label] = keys[i]
+    out_file = f"embedding_clustering_{args.metric}_{args.dendrogram_cut}.pkl"
+    out_dir = os.path.join(
+        root,
+        "data/"
+        + params_json["data_set"]
+        + "/clusterings/"
+        + params_json["projector"]
+        + "/",
+    )
 
-    print(tokens)
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir, exist_ok=True)
+
+    results = {
+        "model": model,
+        "hyperparams": {"metric": args.metric, "cut": args.dendrogram_cut},
+    }
+
+    out_file = os.path.join(out_dir, out_file)
+    with open(out_file, "wb") as f:
+        pickle.dump(results, f)
+
+    logging.info(
+        "-------------------------------------------------------------------------------------- \n\n"
+    )
+
+    logging.info(
+        f"Embedding clustering generated using {args.metric} distances between persistence diagrams."
+    )
+    logging.info("\n")
+    logging.info(
+        "-------------------------------------------------------------------------------------- \n\n"
+    )
