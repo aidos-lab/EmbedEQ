@@ -70,13 +70,14 @@ def visualize_clustered_umaps(dir, model, keys, distances):
     for i, key in enumerate(keys):
         if type(key) == str:
             labels.append(key)
-            # original = i
+            original = i
             idx = list(distances[i])
             idx.pop(i)
         else:
             labels.append(key[:2])
             coords.append(key[:2])
     coords = np.array(coords)
+    print(f"Length of labels {len(labels)}")
 
     plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
 
@@ -91,34 +92,74 @@ def visualize_clustered_umaps(dir, model, keys, distances):
         linkagefun=lambda x: linkage(x, params_json["linkage"]),
         color_threshold=params_json["dendrogram_cut"],
     )
-    dendo.update_layout(hovermode="x")
+    dendo.update_layout(
+        width=1500,
+        height=500,
+        template="simple_white",
+        showlegend=False,
+        font=dict(color="black", size=10),
+        title="Persistence Based Clustering",
+    )
 
-    dendrogram_colors = set()
-    for i in range(len(dendo["data"])):
-        iterator = dendo["data"][i]
-        fig.add_trace(iterator, row=len(dists) + 1, col=1)
-        if i == 0:
-            print(iterator)
-        dendrogram_colors.add(iterator["marker"]["color"])
+    dendo.update_xaxes(
+        dict(
+            title=f"Persistence Diagrams of {params_json['projector'].upper()} Embeddings"
+        )
+    )
+    dendo.update_yaxes(dict(title=f"{metric} distance"))
 
-    print(len(dendo["data"]), len(model.labels_))
-    print(list(dendrogram_colors))
+    dendrogram_colors = []
+    print(len(dendo["data"]))
+    for trace in dendo["data"]:
+        fig.add_trace(trace, row=len(dists) + 1, col=1)
+        dendrogram_colors.append(trace["marker"]["color"])
 
-    # fig.update_layout(
-    #     width=1500,
-    #     height=500,
-    #     template="simple_white",
-    #     showlegend=False,
-    #     font=dict(color="black", size=10),
-    #     title="Persistence Based Clustering",
-    # )
+    print(len(dendrogram_colors), len(model.labels_))
+    # print(list(dendrogram_colors))
 
-    # fig.update_xaxes(
-    #     dict(
-    #         title=f"Persistence Diagrams of {params_json['projector'].upper()} Embeddings"
-    #     )
-    # )
-    # fig.update_yaxes(dict(title=f"{metric} distance"))
+    keys.pop(original)
+    test = [str(key) for key in keys]
+    color_map = dict(zip(test, dendrogram_colors))
+
+    row = 1
+    col = 1
+    for umap in os.listdir(dir):
+        with open(f"{dir}/{umap}", "rb") as f:
+            params = pickle.load(f)
+        proj_2d = params["projection"]
+        hyperparams = str(params["hyperparams"])
+
+        color = color_map[hyperparams]
+        df = pd.DataFrame(proj_2d, columns=["x", "y"])
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["x"],
+                y=df["y"],
+                mode="markers",
+                marker=dict(
+                    size=4,
+                    color=color,
+                ),
+            ),
+            row=row,
+            col=col,
+        )
+        row += 1
+        if row == len(dists) + 1:
+            row = 1
+            col += 1
+
+    fig.update_layout(
+        # height=900,
+        template="simple_white",
+        showlegend=False,
+        font=dict(color="black"),
+        title="Projection Gridsearch Plot",
+    )
+
+    fig.update_xaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
+    fig.update_yaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
     return fig
 
 
