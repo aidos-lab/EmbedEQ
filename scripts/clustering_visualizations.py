@@ -16,20 +16,29 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 
 
-def get_cluster_color(hyperparams, keys):
-    idx = np.argwhere(keys == hyperparams)
-    return idx
+def subplot_grid(dir):
+    hashmap = {}
+    neighbors, dists = [], []
+    coords = []
+    for umap in os.listdir(dir):
+        with open(f"{dir}/{umap}", "rb") as f:
+            D = pickle.load(f)
+        projection = D["projection"]
+        params = D["hyperparams"][:2]
+        coords.append(params)
+        hashmap[str(params[:2]).replace(" ", "")] = projection
+        if D["hyperparams"][0] not in neighbors:
+            neighbors.append(D["hyperparams"][0])
+        if D["hyperparams"][1] not in dists:
+            dists.append(D["hyperparams"][1])
+
+    neighbors.sort()
+    dists.sort()
+    coords.sort()
+    return hashmap, neighbors, dists, coords
 
 
-def make_subplot_specs(num_rows, num_cols):
-
-    skeleton = np.full(shape=(num_rows + 1, num_cols), fill_value={})
-    formatted = [x.tolist() for x in skeleton]
-    formatted[-1] = [{"colspan": num_cols} if i == 0 else None for i in range(num_cols)]
-    return formatted
-
-
-def visualize_clustered_umaps(dir, model, keys, distances):
+def visualize_token_umaps(dir, tokens, dendrogram_colors):
     """
     Create a grid visualization of UMAP projections according .
 
@@ -43,93 +52,99 @@ def visualize_clustered_umaps(dir, model, keys, distances):
     fig : plotly.graph_objects.Figure
         The Plotly figure object representing the UMAP grid visualization.
     """
+    hashmap, neighbors, dists, coords = subplot_grid(dir)
+    num_rows = 1
+    num_cols = len(tokens)
 
-    neighbors, dists = [], []
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
-            params = pickle.load(f)
-        if params["hyperparams"][0] not in neighbors:
-            neighbors.append(params["hyperparams"][0])
-        if params["hyperparams"][1] not in dists:
-            dists.append(params["hyperparams"][1])
-        neighbors.sort()
-        dists.sort()
+    column_labels = [f"Cluster {x}" for x in tokens.keys()]
 
-    spec = make_subplot_specs(len(dists), len(neighbors))
     fig = make_subplots(
-        rows=len(dists) + 1,
-        cols=len(neighbors),
+        rows=num_rows,
+        cols=num_cols,
+        column_titles=column_labels,
+        x_title="Token Embeddings",
+    )
+    coords = [x[:2] for x in tokens.values()]
+    col = 1
+    for coord in coords:
+        ref = str(coord).replace(" ", "")
+        proj_2d = hashmap[ref]
+
+        color = dendrogram_colors[ref]
+        df = pd.DataFrame(proj_2d, columns=["x", "y"])
+
+        fig.add_trace(
+            go.Scatter(
+                x=df["x"],
+                y=df["y"],
+                mode="markers",
+                marker=dict(
+                    size=4,
+                    color=color,
+                ),
+            ),
+            row=1,
+            col=col,
+        )
+        col += 1
+
+    fig.update_layout(
+        width=1500,
+        height=700,
+        template="simple_white",
+        showlegend=True,
+        font=dict(color="black"),
+        title="Token Embeddings",
+    )
+
+    fig.update_xaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+        categoryorder="category ascending",
+    )
+    fig.update_yaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+    )
+    return fig
+
+
+def visualize_clustered_umaps(dir, keys, dendrogram_colors):
+    """
+    Create a grid visualization of UMAP projections according .
+
+    Parameters:
+    -----------
+    dir : str
+        The directory containing the UMAP projections.
+
+    Returns:
+    --------
+    fig : plotly.graph_objects.Figure
+        The Plotly figure object representing the UMAP grid visualization.
+    """
+    hashmap, neighbors, dists, coords = subplot_grid(dir)
+    num_rows = len(dists)
+    num_cols = len(neighbors)
+    fig = make_subplots(
+        rows=num_rows,
+        cols=num_cols,
         column_titles=list(map(str, neighbors)),
         x_title="n_neighbors",
-        row_titles=list(map(str, dists)) + ["Dendrogram"],
+        row_titles=list(map(str, dists)),
         y_title="min_dist",
-        specs=spec,
-    )
-    labels = []
-    coords = []
-    for i, key in enumerate(keys):
-        if type(key) == str:
-            labels.append(key)
-            original = i
-            idx = list(distances[i])
-            idx.pop(i)
-        else:
-            labels.append(key[:2])
-            coords.append(key[:2])
-    coords = np.array(coords)
-    print(f"Length of labels {len(labels)}")
-
-    plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
-
-    def diagram_distance(_):
-        return squareform(distances)
-
-    dendo = ff.create_dendrogram(
-        model.labels_,
-        labels=plotly_labels,
-        colorscale=px.colors.qualitative.Plotly,
-        distfun=diagram_distance,
-        linkagefun=lambda x: linkage(x, params_json["linkage"]),
-        color_threshold=params_json["dendrogram_cut"],
-    )
-    dendo.update_layout(
-        width=1500,
-        height=500,
-        template="simple_white",
-        showlegend=False,
-        font=dict(color="black", size=10),
-        title="Persistence Based Clustering",
     )
 
-    dendo.update_xaxes(
-        dict(
-            title=f"Persistence Diagrams of {params_json['projector'].upper()} Embeddings"
-        )
-    )
-    dendo.update_yaxes(dict(title=f"{metric} distance"))
-
-    dendrogram_colors = []
-    print(len(dendo["data"]))
-    for trace in dendo["data"]:
-        fig.add_trace(trace, row=len(dists) + 1, col=1)
-        dendrogram_colors.append(trace["marker"]["color"])
-
-    print(len(dendrogram_colors), len(model.labels_))
-    # print(list(dendrogram_colors))
-
-    keys.pop(original)
-    test = [str(key) for key in keys]
-    color_map = dict(zip(test, dendrogram_colors))
-
+    keys.remove("original space")
     row = 1
     col = 1
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
-            params = pickle.load(f)
-        proj_2d = params["projection"]
-        hyperparams = str(params["hyperparams"])
+    for coord in coords:
+        ref = str(coord).replace(" ", "")
+        proj_2d = hashmap[ref]
 
-        color = color_map[hyperparams]
+        color = dendrogram_colors[ref]
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
 
         fig.add_trace(
@@ -151,16 +166,63 @@ def visualize_clustered_umaps(dir, model, keys, distances):
             col += 1
 
     fig.update_layout(
-        # height=900,
+        width=1500,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),
         title="Projection Gridsearch Plot",
     )
 
-    fig.update_xaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
-    fig.update_yaxes(showticklabels=False, tickwidth=0, tickcolor="rgba(0,0,0,0)")
+    fig.update_xaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+        categoryorder="category ascending",
+    )
+    fig.update_yaxes(
+        showticklabels=False,
+        tickwidth=0,
+        tickcolor="rgba(0,0,0,0)",
+    )
     return fig
+
+
+def visualize_dendrogram(labels, distances, metric):
+    def diagram_distance(_):
+        return squareform(distances)
+
+    fig = ff.create_dendrogram(
+        np.arange(len(labels)),
+        labels=labels,
+        distfun=diagram_distance,
+        colorscale=px.colors.qualitative.Plotly,
+        linkagefun=lambda x: linkage(x, params_json["linkage"]),
+        color_threshold=params_json["dendrogram_cut"],
+    )
+    fig.update_layout(
+        width=1500,
+        height=1000,
+        template="simple_white",
+        showlegend=False,
+        font=dict(color="black", size=10),
+        title="Persistence Based Clustering",
+    )
+
+    fig.update_xaxes(title=dict(text=f"Embedding Parameters"))
+    fig.update_yaxes(title=dict(text=f"{metric} homological distance"))
+
+    ticktext = fig["layout"]["xaxis"]["ticktext"]
+    tickvals = fig["layout"]["xaxis"]["tickvals"]
+    colormap = {}
+    reference = dict(zip(tickvals, ticktext))
+    for trace in fig["data"]:
+        if 0 in trace["y"]:
+            xs = trace["x"][np.argwhere(trace["y"] == 0)]
+            tickers = [reference[x[0]] for x in xs]
+            for ticker in tickers:
+                # colormap["ticker"] = trace["color"]
+                colormap[ticker] = trace["marker"]["color"]
+    return fig, colormap
 
 
 def save_visualizations_as_html(visualizations, output_file):
@@ -191,8 +253,6 @@ if __name__ == "__main__":
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "src/")
-    import data
-    from utils import convert_to_gtda, get_diagrams
 
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
@@ -292,36 +352,43 @@ if __name__ == "__main__":
     with open(model_in_file, "rb") as M:
         model = pickle.load(M)["model"]
 
-    # cluster_labels = list(model.labels_)
-    # N = len(cluster_labels)
-    # tokens = {}
-    # for label in cluster_labels:
-    #     mask = np.where(cluster_labels == label, True, False)
-    #     idxs = np.array(range(N))[mask]
-    #     # Min Distance from original space
-    #     i = np.argmin(distances[original][idxs])
-    #     tokens[label] = keys[i]
+    labels = []
+    coords = []
+    for i, key in enumerate(keys):
+        if type(key) == str:
+            labels.append(key)
+            original = i
+            idx = list(distances[i])
+            idx.pop(i)
+        else:
+            labels.append(key[:2])
+            coords.append(key[:2])
+    coords = np.array(coords)
 
-    # generator = getattr(data, params_json["data_set"])
-    # X, C, _ = generator(N=params_json["num_samples"])
+    cluster_labels = list(model.labels_)
+    N = len(cluster_labels)
+    tokens = {}
+    for label in np.unique(cluster_labels):
+        mask = np.where(cluster_labels == label, True, False)
+        idxs = np.array(range(N))[mask]
+        # Min Distance from original space
+        slc = distances[original][idxs]
+        i = np.argmin(slc)
+        tokens[label] = keys[i]
 
-    projection_figure = visualize_clustered_umaps(
-        projections_dir,
-        model=model,
-        keys=keys,
-        distances=distances,
+    plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
+    plotly_dendo, colormap = visualize_dendrogram(
+        labels=plotly_labels, distances=distances, metric=metric
     )
 
-    # plotly_dendo = visualize_dendrogram(
-    #     labels=plotly_labels, distances=distances, metric=metric
-    # )
-
-    # data_fig = visualize_data(X, colors)
-
+    projection_figure = visualize_clustered_umaps(
+        projections_dir, keys=keys, dendrogram_colors=colormap
+    )
+    token_figure = visualize_token_umaps(projections_dir, tokens, colormap)
     out_file = "equivalence_classes.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, out_file)
-    save_visualizations_as_html([projection_figure], out_file)
+    save_visualizations_as_html([plotly_dendo, projection_figure], out_file)
