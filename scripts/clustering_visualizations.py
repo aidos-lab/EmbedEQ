@@ -1,60 +1,29 @@
+import argparse
 import json
 import os
 import pickle
 import sys
-import argparse
-
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
-from plotly.tools import mpl_to_plotly
-import plotly.graph_objects as go
 import plotly.figure_factory as ff
+import plotly.graph_objects as go
 import plotly.io as pio
 from dotenv import load_dotenv
 from plotly.subplots import make_subplots
-from scipy.cluster.hierarchy import dendrogram, linkage
-from scipy.spatial.distance import squareform, pdist
+from scipy.cluster.hierarchy import linkage
+from scipy.spatial.distance import squareform
 
 
-def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
-    """Create linkage matrix and then plot the dendrogram for Hierarchical clustering."""
-    counts = np.zeros(model.children_.shape[0])
-    n_samples = len(model.labels_)
-    for i, merge in enumerate(model.children_):
-        current_count = 0
-        for child_idx in merge:
-            if child_idx < n_samples:
-                current_count += 1  # leaf node
-            else:
-                current_count += counts[child_idx - n_samples]
-        counts[i] = current_count
-
-    linkage_matrix = np.column_stack(
-        [model.children_, model.distances_, counts]
-    ).astype(float)
-
-    # Plot the corresponding dendrogram
-    d = dendrogram(
-        linkage_matrix,
-        p=p,
-        distance_sort=True,
-        labels=labels,
-        color_threshold=distance_threshold,
-    )
-    for leaf, leaf_color in zip(plt.gca().get_xticklabels(), d["leaves_color_list"]):
-        leaf.set_color(leaf_color)
-    plt.title(f"Persistence Diagrams Clustering")
-    plt.xlabel("Embeddings")
-    plt.ylabel(f"{distance} distance")
-    return d
+def get_cluster_color(hyperparams, keys):
+    idx = np.argwhere(keys == hyperparams)
+    return idx
 
 
-def visualize_clustered_umaps(dir, labels):
+def visualize_clustered_umaps(dir, model, keys):
     """
-    Create a grid visualization of UMAP projections.
+    Create a grid visualization of UMAP projections according .
 
     Parameters:
     -----------
@@ -89,23 +58,27 @@ def visualize_clustered_umaps(dir, labels):
 
     row = 1
     col = 1
-    for umap in os.listdir(dir):
+    colors = [px.colors.qualitative.Plotly[i] for i in cluster_labels]
+    color_labels = list(model.labels_)
+    I = keys.index("original space")
+    color_labels.pop(I)
+    keys.pop(I)
+
+    for i, umap in enumerate(os.listdir(dir)):
         with open(f"{dir}/{umap}", "rb") as f:
             params = pickle.load(f)
         proj_2d = params["projection"]
+        hyperparams = params["hyperparams"]
+        for j, key in enumerate(keys):
+            if hyperparams == key:
+                color = colors[j]
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
-        df["labels"] = labels
         fig.add_trace(
             go.Scatter(
                 x=df["x"],
                 y=df["y"],
                 mode="markers",
-                marker=dict(
-                    size=4,
-                    color=df["labels"],
-                    cmid=0.3,
-                    colorscale="jet",
-                ),
+                marker=dict(size=4, color=color),
             ),
             row=row,
             col=col,
@@ -116,7 +89,8 @@ def visualize_clustered_umaps(dir, labels):
             col += 1
 
     fig.update_layout(
-        # height=900,
+        height=1000,
+        width=1500,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),
@@ -155,6 +129,7 @@ def visualize_dendrogram(labels, distances, metric):
     fig = ff.create_dendrogram(
         distances,
         labels=labels,
+        colorscale=px.colors.qualitative.Plotly,
         distfun=diagram_distance,
         linkagefun=lambda x: linkage(x, params_json["linkage"]),
         color_threshold=params_json["dendrogram_cut"],
@@ -167,6 +142,13 @@ def visualize_dendrogram(labels, distances, metric):
         font=dict(color="black", size=10),
         title="Persistence Based Clustering",
     )
+
+    fig.update_xaxes(
+        dict(
+            title=f"Persistence Diagrams of {params_json['projector'].upper()} Embeddings"
+        )
+    )
+    fig.update_yaxes(dict(title=f"{metric} distance"))
     return fig
 
 
@@ -199,7 +181,7 @@ if __name__ == "__main__":
     root = os.getenv("root")
     sys.path.append(root + "src/")
     import data
-    from utils import get_diagrams, convert_to_gtda
+    from utils import convert_to_gtda, get_diagrams
 
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
@@ -312,7 +294,7 @@ if __name__ == "__main__":
             coords.append(key[:2])
     coords = np.array(coords)
 
-    plotly_labels = [f"[{i[0]},{i[1]}]" for i in labels]
+    plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
 
     cluster_labels = list(model.labels_)
     N = len(cluster_labels)
@@ -325,17 +307,17 @@ if __name__ == "__main__":
         tokens[label] = keys[i]
 
     generator = getattr(data, params_json["data_set"])
+    X, C, _ = generator(N=params_json["num_samples"])
 
-    X, C, colors = generator(N=params_json["num_samples"])
+    projection_figure = visualize_clustered_umaps(
+        projections_dir, model=model, keys=keys
+    )
 
-    projection_figure = visualize_clustered_umaps(projections_dir, colors)
-
-    # TODO: Plotly dendrogram reporting incorrect clustering
     plotly_dendo = visualize_dendrogram(
         labels=plotly_labels, distances=distances, metric=metric
     )
 
-    data_fig = visualize_data(X, colors)
+    # data_fig = visualize_data(X, colors)
 
     out_file = "equivalence_classes.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
@@ -343,5 +325,4 @@ if __name__ == "__main__":
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, out_file)
-
-    save_visualizations_as_html([data_fig, plotly_dendo], out_file)
+    save_visualizations_as_html([plotly_dendo, projection_figure], out_file)

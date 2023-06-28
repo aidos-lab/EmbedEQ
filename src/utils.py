@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-
 def parameter_coordinates(hyper_params: dict, embedding):
 
     assert embedding in ["umap", "tSNE"], f"{embedding} is not yet supported."
