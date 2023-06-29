@@ -56,7 +56,7 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
     num_rows = 1
     num_cols = len(tokens)
 
-    column_labels = [f"Cluster {x}" for x in tokens.keys()]
+    column_labels = [str(x[:2]) for x in tokens.values()]
 
     fig = make_subplots(
         rows=num_rows,
@@ -90,7 +90,7 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
 
     fig.update_layout(
         width=1500,
-        height=700,
+        height=500,
         template="simple_white",
         showlegend=True,
         font=dict(color="black"),
@@ -344,6 +344,16 @@ if __name__ == "__main__":
         + f"embedding_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl",
     )
 
+    selection_in_file = os.path.join(
+        root,
+        "data/"
+        + params_json["data_set"]
+        + "/EQC/"
+        + params_json["projector"]
+        + "/selected_embeddings/"
+        + f"selection_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl",
+    )
+
     with open(distances_in_file, "rb") as D:
         reference = pickle.load(D)
 
@@ -352,43 +362,37 @@ if __name__ == "__main__":
     with open(model_in_file, "rb") as M:
         model = pickle.load(M)["model"]
 
+    with open(selection_in_file, "rb") as s:
+        tokens = pickle.load(s)
+
+    print(tokens)
     labels = []
     coords = []
     for i, key in enumerate(keys):
         if type(key) == str:
             labels.append(key)
-            original = i
-            idx = list(distances[i])
-            idx.pop(i)
         else:
             labels.append(key[:2])
-            coords.append(key[:2])
-    coords = np.array(coords)
 
-    cluster_labels = list(model.labels_)
-    N = len(cluster_labels)
-    tokens = {}
-    for label in np.unique(cluster_labels):
-        mask = np.where(cluster_labels == label, True, False)
-        idxs = np.array(range(N))[mask]
-        # Min Distance from original space
-        slc = distances[original][idxs]
-        i = np.argmin(slc)
-        tokens[label] = keys[i]
-
+    # DENDROGRAM
     plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
     plotly_dendo, colormap = visualize_dendrogram(
         labels=plotly_labels, distances=distances, metric=metric
     )
 
+    # CLUSTERED PROJECTIONS
     projection_figure = visualize_clustered_umaps(
         projections_dir, keys=keys, dendrogram_colors=colormap
     )
+
+    # SELECTED EMBEDDINGS
     token_figure = visualize_token_umaps(projections_dir, tokens, colormap)
-    out_file = "equivalence_classes.html"
+    out_file = f"{args.data}_equivalence_classes.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, out_file)
-    save_visualizations_as_html([plotly_dendo, projection_figure], out_file)
+    save_visualizations_as_html(
+        [plotly_dendo, projection_figure, token_figure], out_file
+    )
