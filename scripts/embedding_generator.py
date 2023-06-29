@@ -6,7 +6,7 @@ import logging
 import os
 import subprocess
 import sys
-import warnings
+import numpy as np
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from dotenv import load_dotenv
@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+
     logging.basicConfig(
         format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -73,13 +74,11 @@ if __name__ == "__main__":
     this = sys.modules[__name__]
 
     logging.info(f"Data set: {args.data}")
-    logging.info(f"Number of samples: {args.num_samples}")
     logging.info(f"Choice of Projector: {args.projector}")
-
     logging.info(f"Hyperparameters: {args.hyperparams}")
-    parameter_space = parameter_coordinates(args.hyperparams, embedding=args.projector)
 
     # Write Coordinates to JSON
+    parameter_space = parameter_coordinates(args.hyperparams, embedding=args.projector)
     params_json["coordinates"] = parameter_space
     with open(JSON_PATH, "w") as f:
         json.dump(params_json, f, indent=4)

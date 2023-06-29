@@ -45,6 +45,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-s",
+        "--subset",
+        default=None,
+        nargs="+",
+        help="Choose a subset of projections to compute homology.",
+    )
+
+    parser.add_argument(
         "-v",
         "--Verbose",
         default=False,
@@ -66,6 +74,11 @@ if __name__ == "__main__":
     logging.info(f"Number of diagrams to generate: {num_loops}")
     logging.info(f"Maximum Homology Dim: {args.homology_max_dim}")
 
+    if args.subset is not None:
+        logging.info(f"Interval Subset: {args.subset}")
+        parameter_space = 
+    else:
+        
     ripserer = os.path.join(root, "src/ripserer.py")
     subprocesses = []
     ## GRID SEARCH PROJECTIONS
