@@ -66,17 +66,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
     # Original Space
     if args.i == -1:
-        generator = getattr(data, args.data)
-        X, C, labels = generator(N=args.num_samples)
+        if params_json["scanpy"]:
+            in_file = params_json["scanpy_pca_file"]
+            with open(in_file, "rb") as f:
+                X = pickle.load(f)["pca"]
 
-        D = pairwise_distances(X).max()
-        if params_json["normalize"]:
-            X /= D
-        dgms = rips.fit_transform(X)
-        results = {"diagram": dgms, "diameter": D, "hyperparams": "original space"}
+            id_ = "PCA"
+        else:
+            id_ = "original space"
+            generator = getattr(data, args.data)
+            X, C, labels = generator(N=args.num_samples)
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
@@ -92,12 +93,19 @@ if __name__ == "__main__":
         assert os.path.isfile(in_file), "Invalid Projection"
 
         with open(in_file, "rb") as f:
-            X = pickle.load(f)
-        D = pairwise_distances(X["projection"]).max()
-        if params_json["normalize"]:
-            X["projection"] /= D
-        dgms = rips.fit_transform(X["projection"])
-        results = {"diagram": dgms, "diameter": D, "hyperparams": X["hyperparams"]}
+            reference = pickle.load(f)
+        id_ = reference["hyperparams"]
+        X = reference["projection"]
+
+    if params_json["normalize"]:
+        D = pairwise_distances(X)
+        max_D = D.max()
+        X /= max_D
+
+    # RIPSER
+    rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
+    dgms = rips.fit_transform(X)
+    results = {"diagram": dgms, "hyperparams": id_}
 
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(

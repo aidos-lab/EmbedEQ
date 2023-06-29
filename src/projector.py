@@ -61,10 +61,22 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    generator = getattr(data, args.data)
-    logging.info(f"Using generator routine {generator}")
-
-    X, C, labels = generator(N=args.num_samples)
+    if params_json["scanpy"]:
+        generator = getattr(data, "scanpy")
+        file = generator()
+        # Save to JSON
+        params_json["scanpy_pca_file"] = file
+        with open(JSON_PATH, "w") as f:
+            json.dump(params_json, f, indent=4)
+        # Load PCA
+        with open(file, "rb") as f:
+            reference = pickle.load(f)
+        X = reference["pca"]
+        labels = reference["labels"]
+    else:
+        generator = getattr(data, args.data)
+        logging.info(f"Using generator routine {generator}")
+        X, C, labels = generator(N=args.num_samples)
     hyperparams = params_json["coordinates"][args.i]
     embedding = getattr(embeddings, args.projector)
     logging.info(f"Using embedding routine {embedding}")

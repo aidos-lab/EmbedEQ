@@ -14,10 +14,12 @@ from dotenv import load_dotenv
 from plotly.subplots import make_subplots
 import logging
 
+from clustering_visualizations import subplot_grid
+
 
 def visualize_umaps(dir, labels):
     """
-    Create a grid visualization of UMAP projections.
+    Create a grid visualization of UMAP projections according .
 
     Parameters:
     -----------
@@ -29,21 +31,12 @@ def visualize_umaps(dir, labels):
     fig : plotly.graph_objects.Figure
         The Plotly figure object representing the UMAP grid visualization.
     """
-
-    neighbors, dists = [], []
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
-            params = pickle.load(f)
-        if params["hyperparams"][0] not in neighbors:
-            neighbors.append(params["hyperparams"][0])
-        if params["hyperparams"][1] not in dists:
-            dists.append(params["hyperparams"][1])
-        neighbors.sort()
-        dists.sort()
-
+    hashmap, neighbors, dists, coords = subplot_grid(dir)
+    num_rows = len(dists)
+    num_cols = len(neighbors)
     fig = make_subplots(
-        rows=len(dists),
-        cols=len(neighbors),
+        rows=num_rows,
+        cols=num_cols,
         column_titles=list(map(str, neighbors)),
         x_title="n_neighbors",
         row_titles=list(map(str, dists)),
@@ -52,10 +45,10 @@ def visualize_umaps(dir, labels):
 
     row = 1
     col = 1
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
-            params = pickle.load(f)
-        proj_2d = params["projection"]
+    for coord in coords:
+        ref = str(coord).replace(" ", "")
+        proj_2d = hashmap[ref]
+
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
         df["labels"] = labels
         fig.add_trace(
@@ -159,8 +152,8 @@ if __name__ == "__main__":
 
     projection_figure = visualize_umaps(in_dir, labels)
     data_figure = visualize_data(X, labels)
-
-    out_file = "embedding_summary.html"
+    data_set = params_json["data_set"]
+    out_file = f"{data_set}_embedding_summary.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
 
     if not os.path.isdir(out_dir):
