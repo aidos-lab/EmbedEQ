@@ -80,7 +80,7 @@ if __name__ == "__main__":
     this = sys.modules[__name__]
 
     logging.info(f"Data set: {args.data}")
-    logging.info(f"num_samples: {args.num_samples}")
+    logging.info(f"num_samples: {len(args.data)}")
     logging.info(f"Choice of Projector: {args.projector}")
     logging.info(f"Hyperparameters: {args.hyperparams}")
 

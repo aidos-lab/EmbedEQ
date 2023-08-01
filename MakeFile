@@ -23,7 +23,7 @@ embeddings:
 
 homology:
 	@echo "Generating Persistence Diagrams"
-	@ python src/ripserer.py -i -1
+	@python src/ripserer.py -i -1
 	@python scripts/homology_generator.py
 
 clustering:
