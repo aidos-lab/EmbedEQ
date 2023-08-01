@@ -8,7 +8,6 @@ import numpy as np
 import scanpy as sc
 from dotenv import load_dotenv
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.datasets import make_swiss_roll
 from sklearn.neighbors import kneighbors_graph
 
 
@@ -23,6 +22,52 @@ def assign_labels(data, n_clusters, k=10):
     return labels
 
 
+################################################################################################
+################                Sklearn Toy Datasets                            ################
+################################################################################################
+
+
+def iris(**kwargs):
+    from sklearn.datasets import load_iris
+
+    return load_iris(return_X_y=True)
+
+
+def diabetes(**kwargs):
+    from sklearn.datasets import load_diabetes
+
+    return load_diabetes(return_X_y=True)
+
+
+def diabetes(**kwargs):
+    from sklearn.datasets import load_digits
+
+    return load_digits(return_X_y=True)
+
+
+def linnerud(**kwargs):
+    from sklearn.datasets import load_linnerud
+
+    return load_linnerud(return_X_y=True)
+
+
+def wine(**kwargs):
+    from sklearn.datasets import load_wine
+
+    return load_wine(return_X_y=True)
+
+
+def breast_cancer(**kwargs):
+    from sklearn.datasets import load_breast_cancer
+
+    return load_breast_cancer(return_X_y=True)
+
+
+################################################################################################
+################                    Shape Datasets                              ################
+################################################################################################
+
+
 def swiss_roll(
     N: int = 1500,
     hole: bool = False,
@@ -30,6 +75,7 @@ def swiss_roll(
     **kwargs,
 ):
     """Generate Swiss Roll data set."""
+    from sklearn.datasets import make_swiss_roll
 
     data, color = make_swiss_roll(
         n_samples=N,
@@ -59,6 +105,7 @@ def moons(N, **kwargs):
     return make_moons(N, random_state=kwargs["random_state"])
 
 
+# BREAKING RIPSER??
 def nested_circles(N, **kwargs):
     """Generate nested circles with labels."""
     from sklearn.datasets import make_circles
@@ -168,7 +215,7 @@ def annulus(N, r, R, **kwargs):
     return X, np.linspace(0, 1, N)
 
 
-def noisy_annulus(N, r, R, f=0.01, **kwargs):
+def noisy_annulus(N, r=2, R=6, f=0.01, **kwargs):
     """Sample points from noisy annulus,
     with points obstructing a clear H1 feature.
 
@@ -216,7 +263,8 @@ def noisy_annulus(N, r, R, f=0.01, **kwargs):
 
     X = np.column_stack((radii * np.cos(thetas), radii * np.sin(thetas)))
 
-    return X, np.linspace(0, 1, size)
+    labels = assign_labels(X, n_clusters=kwargs["n_clusters"])
+    return X, labels
 
 
 ################################################################################################
