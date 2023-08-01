@@ -5,7 +5,6 @@ import os
 import pickle
 
 import numpy as np
-import scanpy as sc
 from dotenv import load_dotenv
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
@@ -265,46 +264,3 @@ def noisy_annulus(N, r=2, R=6, f=0.01, **kwargs):
 
     labels = assign_labels(X, n_clusters=kwargs["n_clusters"])
     return X, labels
-
-
-################################################################################################
-################        Single Cell Datasets with Scanpy            ############################
-################################################################################################
-
-
-def scanpy():
-    sc.settings.verbosity = 0
-    root = os.getenv("root")
-    JSON_PATH = os.getenv("params")
-    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
-    with open(JSON_PATH, "r") as f:
-        params_json = json.load(f)
-
-    file = os.path.join(root, params_json["path_to_raw_scanpy"])
-    assert os.path.isfile(file), "Local Data Copy does not exist"
-
-    adata = sc.read_h5ad(file)
-    adata.X = adata.layers["log1p_norm"]
-    adata.var["highly_variable"] = adata.var["highly_deviant"]
-
-    sc.pp.pca(
-        adata,
-        svd_solver="arpack",
-        n_comps=params_json["num_pca_components"],
-        use_highly_variable=True,
-    )
-    pca = adata.obsm["X_pca"]
-    labels = adata.obs[params_json["scanpy_color_label"]]
-    results = {"pca": pca, "labels": labels}
-
-    out_dir = os.path.join(root, f"data/local_copies/pca/")
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
-
-    name = params_json["data_set"]
-    pca_out_file = os.path.join(out_dir, f"{name}_pca.pkl")
-
-    with open(pca_out_file, "wb") as f:
-        pickle.dump(results, f)
-    return pca_out_file
-    # Other option is to just return PCA and use standard pipeline

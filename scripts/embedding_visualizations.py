@@ -163,22 +163,14 @@ if __name__ == "__main__":
         + params_json["projector"]
         + "/",
     )
-    if params_json["scanpy"]:
-        in_file = params_json["scanpy_pca_file"]
-        with open(in_file, "rb") as f:
-            reference = pickle.load(f)
-        full_pca = reference["pca"]
-        X = full_pca.T[:3].T
-        labels = reference["labels"].values
 
-    else:
-        generator = getattr(data, params_json["data_set"])
-        logging.info(f"Using generator routine {generator}")
-        X, labels = generator(
-            N=params_json["num_samples"],
-            random_state=params_json["random_state"],
-            n_clusters=params_json["num_clusters"],
-        )
+    generator = getattr(data, params_json["data_set"])
+    logging.info(f"Using generator routine {generator}")
+    X, labels = generator(
+        N=params_json["num_samples"],
+        random_state=params_json["random_state"],
+        n_clusters=params_json["num_clusters"],
+    )
     try:
         data_figure = visualize_data(X, labels)
     except AssertionError:

@@ -74,20 +74,13 @@ if __name__ == "__main__":
 
     # Original Space
     if args.i == -1:
-        if params_json["scanpy"]:
-            in_file = params_json["scanpy_pca_file"]
-            with open(in_file, "rb") as f:
-                X = pickle.load(f)["pca"]
-
-            id_ = "PCA"
-        else:
-            id_ = "original space"
-            generator = getattr(data, args.data)
-            X, labels = generator(
-                N=args.num_samples,
-                random_state=args.seed,
-                n_clusters=params_json["num_clusters"],
-            )
+        id_ = "original space"
+        generator = getattr(data, args.data)
+        X, labels = generator(
+            N=args.num_samples,
+            random_state=args.seed,
+            n_clusters=params_json["num_clusters"],
+        )
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"

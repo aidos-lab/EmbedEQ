@@ -1,7 +1,6 @@
 "Various Embedding methods for dimensionality reduction"
 
 import os
-import scanpy as sc
 
 ######################################################################
 # Silencing UMAP Warnings
