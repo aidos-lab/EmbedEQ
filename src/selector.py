@@ -90,6 +90,8 @@ if __name__ == "__main__":
 
     if args.normalize:
         metric = f"normalized_{args.metric}"
+    else:
+        metric = args.metric
 
     projections_dir = os.path.join(
         root,
