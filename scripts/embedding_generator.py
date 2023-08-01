@@ -47,7 +47,13 @@ if __name__ == "__main__":
         type=int,
         help="Set number of samples in data set",
     )
-
+    parser.add_argument(
+        "-c",
+        "--num_clusters",
+        default=params_json["num_clusters"],
+        type=int,
+        help="Set number of artifical clusters data set",
+    )
     parser.add_argument(
         "--projector",
         type=str,
@@ -74,6 +80,7 @@ if __name__ == "__main__":
     this = sys.modules[__name__]
 
     logging.info(f"Data set: {args.data}")
+    logging.info(f"num_samples: {args.num_samples}")
     logging.info(f"Choice of Projector: {args.projector}")
     logging.info(f"Hyperparameters: {args.hyperparams}")
 

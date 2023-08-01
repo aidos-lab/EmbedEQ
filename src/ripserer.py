@@ -54,7 +54,13 @@ if __name__ == "__main__":
         default=0,
         help="Position in coordinate space.",
     )
-
+    parser.add_argument(
+        "-s",
+        "--seed",
+        default=params_json["random_state"],
+        type=int,
+        help="Random Seed for reproducing Sklearn Datasets.",
+    )
     parser.add_argument(
         "-v",
         "--Verbose",
@@ -77,7 +83,7 @@ if __name__ == "__main__":
         else:
             id_ = "original space"
             generator = getattr(data, args.data)
-            X, C, labels = generator(N=args.num_samples)
+            X, labels = generator(N=args.num_samples, random_state=args.seed)
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
