@@ -97,7 +97,7 @@ def visualize_data(X, labels):
             z=df["z"],
             mode="markers",
             marker=dict(
-                size=2,
+                size=4,
                 color=df["labels"],
                 colorscale="jet",
             ),
@@ -110,7 +110,7 @@ def visualize_data(X, labels):
             y=df["y"],
             mode="markers",
             marker=dict(
-                size=2,
+                size=8,
                 color=df["labels"],
                 colorscale="jet",
             ),
@@ -175,9 +175,14 @@ if __name__ == "__main__":
         generator = getattr(data, params_json["data_set"])
         logging.info(f"Using generator routine {generator}")
         X, labels = generator(
-            N=params_json["num_samples"], random_state=params_json["random_state"]
+            N=params_json["num_samples"],
+            random_state=params_json["random_state"],
+            n_clusters=params_json["num_clusters"],
         )
-    data_figure = visualize_data(X, labels)
+    try:
+        data_figure = visualize_data(X, labels)
+    except AssertionError:
+        data_figure = go.Figure()
 
     projection_figure = visualize_umaps(in_dir, labels)
 

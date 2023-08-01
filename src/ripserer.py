@@ -83,7 +83,11 @@ if __name__ == "__main__":
         else:
             id_ = "original space"
             generator = getattr(data, args.data)
-            X, labels = generator(N=args.num_samples, random_state=args.seed)
+            X, labels = generator(
+                N=args.num_samples,
+                random_state=args.seed,
+                n_clusters=params_json["num_clusters"],
+            )
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
@@ -105,6 +109,7 @@ if __name__ == "__main__":
 
     if params_json["normalize"]:
         D = pairwise_distances(X)
+
         max_D = D.max()
         X /= max_D
 
