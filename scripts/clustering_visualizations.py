@@ -1,3 +1,4 @@
+"Check the way diagrams are being read in when computing distance. Probably having the original space read in diagram -1"
 import argparse
 import json
 import os
@@ -111,7 +112,7 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
     return fig
 
 
-def visualize_clustered_umaps(dir, keys, dendrogram_colors):
+def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"):
     """
     Create a grid visualization of UMAP projections according .
 
@@ -136,8 +137,7 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors):
         row_titles=list(map(str, dists)),
         y_title="min_dist",
     )
-
-    keys.remove("original space")
+    keys.remove(id_)
     row = 1
     col = 1
     for coord in coords:
@@ -215,12 +215,15 @@ def visualize_dendrogram(labels, distances, metric):
     tickvals = fig["layout"]["xaxis"]["tickvals"]
     colormap = {}
     reference = dict(zip(tickvals, ticktext))
+
+    # Extracting Dendrogram Colors
     for trace in fig["data"]:
         if 0 in trace["y"]:
             xs = trace["x"][np.argwhere(trace["y"] == 0)]
-            tickers = [reference[x[0]] for x in xs]
+            # This catch will ensure plots are generated, but empty plots may indicate you
+            # have mismatched info between old runs and your params.json. Clean and rerun
+            tickers = [reference[x[0]] if x[0] in reference.keys() else 0 for x in xs]
             for ticker in tickers:
-                # colormap["ticker"] = trace["color"]
                 colormap[ticker] = trace["marker"]["color"]
     return fig, colormap
 
@@ -308,6 +311,8 @@ if __name__ == "__main__":
 
     if args.normalize:
         metric = f"normalized_{args.metric}"
+    else:
+        metric = args.metric
 
     projections_dir = os.path.join(
         root,
@@ -358,31 +363,31 @@ if __name__ == "__main__":
         reference = pickle.load(D)
 
     keys, distances = reference["keys"], reference["distances"]
-
     with open(model_in_file, "rb") as M:
         model = pickle.load(M)["model"]
 
     with open(selection_in_file, "rb") as s:
         tokens = pickle.load(s)
 
-    print(tokens)
     labels = []
     coords = []
     for i, key in enumerate(keys):
         if type(key) == str:
             labels.append(key)
+            id_ = key
         else:
             labels.append(key[:2])
 
     # DENDROGRAM
     plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
     plotly_dendo, colormap = visualize_dendrogram(
-        labels=plotly_labels, distances=distances, metric=metric
+        labels=plotly_labels,
+        distances=distances,
+        metric=metric,
     )
-
     # CLUSTERED PROJECTIONS
     projection_figure = visualize_clustered_umaps(
-        projections_dir, keys=keys, dendrogram_colors=colormap
+        projections_dir, keys=keys, dendrogram_colors=colormap, id_=id_
     )
 
     # SELECTED EMBEDDINGS

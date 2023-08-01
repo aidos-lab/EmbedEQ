@@ -131,7 +131,7 @@ if __name__ == "__main__":
     results = {
         "model": model,
         "hyperparams": {
-            "metric": metric,
+            "metric": args.metric,
             "cut": args.dendrogram_cut,
             "linkage": args.linkage,
         },
