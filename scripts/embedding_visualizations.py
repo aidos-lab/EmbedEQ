@@ -5,7 +5,6 @@ import sys
 
 
 import numpy as np
-import matplotlib
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -85,22 +84,41 @@ def visualize_umaps(dir, labels):
 
 
 def visualize_data(X, labels):
-    df = pd.DataFrame(X, columns=["x", "y", "z"])
-    df["labels"] = labels
+    dim = X.shape[1]
+    assert dim in [2, 3], "Only 2D and 3D Scatter Plots are supported"
 
-    trace = go.Scatter3d(
-        x=df["x"],
-        y=df["y"],
-        z=df["z"],
-        mode="markers",
-        marker=dict(
-            size=4,
-            color=df["labels"],
-            colorscale="jet",
-            cmid=0.3,
-        ),
-    )
+    # 3D
+    if dim == 3:
+        df = pd.DataFrame(X, columns=["x", "y", "z"])
+        df["labels"] = labels
+        trace = go.Scatter3d(
+            x=df["x"],
+            y=df["y"],
+            z=df["z"],
+            mode="markers",
+            marker=dict(
+                size=2,
+                color=df["labels"],
+                colorscale="jet",
+            ),
+        )
+    else:
+        df = pd.DataFrame(X, columns=["x", "y"])
+        df["labels"] = labels
+        trace = go.Scatter(
+            x=df["x"],
+            y=df["y"],
+            mode="markers",
+            marker=dict(
+                size=2,
+                color=df["labels"],
+                colorscale="jet",
+            ),
+        )
+
     fig = go.Figure(data=trace)
+
+    fig.update_layout(legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01))
     return fig
 
 
@@ -145,13 +163,24 @@ if __name__ == "__main__":
         + params_json["projector"]
         + "/",
     )
-    generator = getattr(data, params_json["data_set"])
-    logging.info(f"Using generator routine {generator}")
+    if params_json["scanpy"]:
+        in_file = params_json["scanpy_pca_file"]
+        with open(in_file, "rb") as f:
+            reference = pickle.load(f)
+        full_pca = reference["pca"]
+        X = full_pca.T[:3].T
+        labels = reference["labels"].values
 
-    X, C, labels = generator(N=params_json["num_samples"])
+    else:
+        generator = getattr(data, params_json["data_set"])
+        logging.info(f"Using generator routine {generator}")
+        X, labels = generator(
+            N=params_json["num_samples"], random_state=params_json["random_state"]
+        )
+    data_figure = visualize_data(X, labels)
 
     projection_figure = visualize_umaps(in_dir, labels)
-    data_figure = visualize_data(X, labels)
+
     data_set = params_json["data_set"]
     out_file = f"{data_set}_embedding_summary.html"
     out_dir = os.path.join(root, "data/" + params_json["data_set"])
