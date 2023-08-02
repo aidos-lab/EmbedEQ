@@ -85,10 +85,12 @@ if __name__ == "__main__":
     )
     # If classes are automatically generated, reset params file
     params_json["num_clusters"] = len(np.unique(labels))
+    params_json["num_samples"] = len(X)
     with open(JSON_PATH, "w") as f:
         json.dump(params_json, f, indent=4)
 
     hyperparams = params_json["coordinates"][args.i]
+
     embedding = getattr(embeddings, args.projector)
     logging.info(f"Using embedding routine {embedding}")
     projection = embedding(X, hyperparams)

@@ -71,7 +71,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     this = sys.modules[__name__]
-
     # Original Space
     if args.i == -1:
         id_ = "original space"

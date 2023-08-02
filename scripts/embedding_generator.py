@@ -79,13 +79,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    logging.info(f"Data set: {args.data}")
-    logging.info(f"num_samples: {len(args.data)}")
-    logging.info(f"Choice of Projector: {args.projector}")
-    logging.info(f"Hyperparameters: {args.hyperparams}")
-
     # Write Coordinates to JSON
-    parameter_space = parameter_coordinates(args.hyperparams, embedding=args.projector)
+    parameter_space, reported_params = parameter_coordinates(
+        args.hyperparams, embedding=args.projector
+    )
+
+    logging.info(f"Data set: {args.data}")
+    logging.info(f"Choice of Projector: {args.projector}")
+    logging.info(f"Hyperparameters: {reported_params}")
+
     params_json["coordinates"] = parameter_space
     with open(JSON_PATH, "w") as f:
         json.dump(params_json, f, indent=4)

@@ -3,6 +3,7 @@ include .env
 PARAMS_FILE := $(strip $(params))
 PARAMS_JSON := $(shell cat $(PARAMS_FILE))
 DATA_SET := $(shell echo '$(PARAMS_JSON)' | jq -r '.data_set')
+PROJECTOR := $(shell echo '$(PARAMS_JSON)' | jq -r '.projector')
 
 
 all: embeddings homology clustering selection vis
@@ -12,7 +13,7 @@ selection:
 	@echo "Selecting Embeddings"
 	@python src/selector.py
 
-vis:
+vis: clustering selection
 	@echo "Generating Visualizations"
 	@python scripts/embedding_visualizations.py
 	@python scripts/clustering_visualizations.py
@@ -30,4 +31,10 @@ clustering:
 	@echo "Computing Topolical Distances"
 	@python src/clustering.py
 clean:
+	@rm -rf data/${DATA_SET}/diagrams/${PROJECTOR}/
+	@rm -rf data/${DATA_SET}/EQC/${PROJECTOR}/
+	@rm -rf data/${DATA_SET}/projections/${PROJECTOR}/
+	@rm -rf data/${DATA_SET}/synopsis/${PROJECTOR}/
+clean-data:
 	@rm -rf data/${DATA_SET}/
+
