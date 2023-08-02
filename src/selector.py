@@ -7,25 +7,28 @@ import logging
 
 import numpy as np
 from dotenv import load_dotenv
+from selection_criteria import min_topological_distance
 
 
-def embedding_selector(keys, distances, model):
+def embedding_selector(
+    keys,
+    distances,
+    model,
+    selection_fn=min_topological_distance,
+    id_="original space",
+):
 
-    original = [True if type(key) is str else False for key in keys]
-    cluster_labels = list(model.labels_)
-    N = len(cluster_labels)
-    O = np.array(range(N))[original][0]
-    selection = {}
-    for label in np.unique(cluster_labels):
-        mask = np.where(cluster_labels == label, True, False)
-        items = np.array(range(N))[mask]
-        # Remove Cluster containing original
-        if O in items:
-            continue
-        # Min Distance from original space
-        min_dist = np.min(distances[O][items])
-        i = np.where(distances[O] == min_dist)[0][0]
-        selection[label] = keys[i]
+    assert len(keys) == len(
+        model.labels_
+    ), "Mismatch between hyperparamter keys and model labels"
+
+    selection = selection_fn(
+        keys=keys,
+        labels=model.labels_,
+        distances=distances,
+        id_=id_,
+    )
+
     return selection
 
 
