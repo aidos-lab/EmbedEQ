@@ -1,24 +1,7 @@
 """Data set generator methods."""
 
-import json
-import os
-import pickle
-
 import numpy as np
-from dotenv import load_dotenv
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.neighbors import kneighbors_graph
-
-
-def assign_labels(data, n_clusters, k=10):
-    """Assign Labels for Sklearn Data Sets based on KNN Graphs"""
-
-    connectivity = kneighbors_graph(data, n_neighbors=k, include_self=False)
-    ward = AgglomerativeClustering(
-        n_clusters=n_clusters, connectivity=connectivity, linkage="ward"
-    ).fit(data)
-    labels = ward.labels_
-    return labels
+from utils import assign_labels
 
 
 ################################################################################################
@@ -38,7 +21,7 @@ def diabetes(**kwargs):
     return load_diabetes(return_X_y=True)
 
 
-def diabetes(**kwargs):
+def digits(**kwargs):
     from sklearn.datasets import load_digits
 
     return load_digits(return_X_y=True)
@@ -76,7 +59,7 @@ def swiss_roll(
     """Generate Swiss Roll data set."""
     from sklearn.datasets import make_swiss_roll
 
-    data, color = make_swiss_roll(
+    data, _ = make_swiss_roll(
         n_samples=N,
         random_state=0,
         hole=hole,
