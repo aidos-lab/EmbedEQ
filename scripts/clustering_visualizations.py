@@ -17,28 +17,6 @@ from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
 
 
-def subplot_grid(dir):
-    hashmap = {}
-    neighbors, dists = [], []
-    coords = []
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
-            D = pickle.load(f)
-        projection = D["projection"]
-        params = D["hyperparams"][:2]
-        coords.append(params)
-        hashmap[str(params[:2]).replace(" ", "")] = projection
-        if D["hyperparams"][0] not in neighbors:
-            neighbors.append(D["hyperparams"][0])
-        if D["hyperparams"][1] not in dists:
-            dists.append(D["hyperparams"][1])
-
-    neighbors.sort()
-    dists.sort()
-    coords.sort()
-    return hashmap, neighbors, dists, coords
-
-
 def visualize_token_umaps(dir, tokens, dendrogram_colors):
     """
     Create a grid visualization of UMAP projections according .
@@ -256,6 +234,7 @@ if __name__ == "__main__":
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "src/")
+    from utils import embedding_coloring, subplot_grid
 
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
@@ -370,7 +349,6 @@ if __name__ == "__main__":
         tokens = pickle.load(s)
 
     labels = []
-    coords = []
     for i, key in enumerate(keys):
         if type(key) == str:
             labels.append(key)
@@ -380,20 +358,27 @@ if __name__ == "__main__":
 
     # DENDROGRAM
     plotly_labels = [f"[{i[0]},{i[1]}]" if type(i) != str else i for i in labels]
+
     plotly_dendo, colormap = visualize_dendrogram(
         labels=plotly_labels,
         distances=distances,
         metric=metric,
     )
+
     # CLUSTERED PROJECTIONS
     projection_figure = visualize_clustered_umaps(
         projections_dir, keys=keys, dendrogram_colors=colormap, id_=id_
     )
 
     # SELECTED EMBEDDINGS
-    token_figure = visualize_token_umaps(projections_dir, tokens, colormap)
+    # New colors
+    token_color_map = embedding_coloring(colormap)
+    token_figure = visualize_token_umaps(projections_dir, tokens, token_color_map)
     out_file = f"{args.data}_equivalence_classes.html"
-    out_dir = os.path.join(root, "data/" + params_json["data_set"])
+    out_dir = os.path.join(
+        root,
+        "data/" + params_json["data_set"] + "/synopsis/" + params_json["projector"],
+    )
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)

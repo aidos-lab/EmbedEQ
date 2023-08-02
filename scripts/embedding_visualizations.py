@@ -13,8 +13,6 @@ from dotenv import load_dotenv
 from plotly.subplots import make_subplots
 import logging
 
-from clustering_visualizations import subplot_grid
-
 
 def visualize_umaps(dir, labels):
     """
@@ -33,6 +31,7 @@ def visualize_umaps(dir, labels):
     hashmap, neighbors, dists, coords = subplot_grid(dir)
     num_rows = len(dists)
     num_cols = len(neighbors)
+
     fig = make_subplots(
         rows=num_rows,
         cols=num_cols,
@@ -150,6 +149,8 @@ if __name__ == "__main__":
     sys.path.append(root + "src/")
     import data
 
+    from utils import subplot_grid
+
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
     with open(JSON_PATH, "r") as f:
@@ -180,7 +181,10 @@ if __name__ == "__main__":
 
     data_set = params_json["data_set"]
     out_file = f"{data_set}_embedding_summary.html"
-    out_dir = os.path.join(root, "data/" + params_json["data_set"])
+    out_dir = os.path.join(
+        root,
+        "data/" + params_json["data_set"] + "/synopsis/" + params_json["projector"],
+    )
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
