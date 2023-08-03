@@ -16,7 +16,13 @@ from sklearn.neighbors import kneighbors_graph
 def parameter_coordinates(hyper_params: dict, embedding):
 
     # TODO: Generalize formatting parameter grid search for different Embeddings
-    assert embedding in ["umap", "tSNE", "phate"], f"{embedding} is not yet supported."
+    assert embedding in [
+        "umap",
+        "tSNE",
+        "phate",
+        "isomap",
+        "LLE",
+    ], f"{embedding} is not yet supported."
     dim = hyper_params["dim"]
     if embedding == "umap":
         N = hyper_params["n_neighbors"]
@@ -51,6 +57,28 @@ def parameter_coordinates(hyper_params: dict, embedding):
             "dim": dim,
         }
         coordinates = list(itertools.product(knn, gamma, dim))
+
+    if embedding == "isomap":
+        N = hyper_params["n_neighbors"]
+        m = hyper_params["metric"]
+
+        reported_params = {
+            "n_neighbors": N,
+            "metric": m,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, m, dim))
+
+    if embedding == "LLE":
+        N = hyper_params["n_neighbors"]
+        reg = hyper_params["reg"]
+
+        reported_params = {
+            "n_neighbors": N,
+            "reg": reg,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, reg, dim))
 
     return coordinates, reported_params
 

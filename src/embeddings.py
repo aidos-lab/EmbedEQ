@@ -18,7 +18,7 @@ os.environ["KMP_WARNINGS"] = "off"
 ######################################################################")
 from umap import UMAP
 from phate import PHATE
-from sklearn.manifold import TSNE
+from sklearn.manifold import TSNE, Isomap, LocallyLinearEmbedding
 
 
 def umap(data, hyperparams, seed=0, **kwargs):
@@ -54,6 +54,28 @@ def phate(data, hyperparams, seed=0, **kwargs):
         gamma=gamma,
         random_state=seed,
         verbose=0,
+    )
+    projection = operator.fit_transform(data)
+    return projection
+
+
+def isomap(data, hyperparams, seed=0, **kwargs):
+    n, m, dim = hyperparams
+    operator = Isomap(
+        n_components=dim,
+        n_neighbors=n,
+        metric=m,
+    )
+    projection = operator.fit_transform(data)
+    return projection
+
+
+def LLE(data, hyperparams, seed=0, **kwargs):
+    n, reg, dim = hyperparams
+    operator = LocallyLinearEmbedding(
+        n_components=dim,
+        n_neighbors=n,
+        reg=reg,
     )
     projection = operator.fit_transform(data)
     return projection
