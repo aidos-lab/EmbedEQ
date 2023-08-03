@@ -49,6 +49,11 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
         ref = str(coord).replace(" ", "")
         proj_2d = hashmap[ref]
 
+        # TODO: Clean this up
+        # Remove Interior String Quotes
+        if "'" in ref:
+            ref = ref.replace("'", "")
+
         color = dendrogram_colors[ref]
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
 
@@ -107,6 +112,7 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
     hashmap, neighbors, dists, coords = subplot_grid(dir)
     num_rows = len(dists)
     num_cols = len(neighbors)
+
     fig = make_subplots(
         rows=num_rows,
         cols=num_cols,
@@ -118,9 +124,16 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
     keys.remove(id_)
     row = 1
     col = 1
+
     for coord in coords:
         ref = str(coord).replace(" ", "")
+
         proj_2d = hashmap[ref]
+
+        # TODO: Clean this up
+        # Remove Interior String Quotes
+        if "'" in ref:
+            ref = ref.replace("'", "")
 
         color = dendrogram_colors[ref]
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
