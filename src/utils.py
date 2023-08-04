@@ -94,6 +94,14 @@ def assign_labels(data, n_clusters, k=10):
     return labels
 
 
+def load_local_data(name):
+    load_dotenv()
+    print(name)
+    file = os.getenv(name)
+    print(file)
+    return np.load(file)["data"]
+
+
 def get_diagrams(dir):
     assert os.path.isdir(
         dir
