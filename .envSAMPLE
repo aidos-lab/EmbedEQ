@@ -1,0 +1,3 @@
+root='**PATH_TO_ROOT**/'
+params='**PATH_TO_ROOT**/PARAMS_FILE_NAME'
+ipsc='**PATH_TO_ROOT**/data/local_datasets/ipsc.npz'
