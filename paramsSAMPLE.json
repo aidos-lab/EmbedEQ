@@ -1,0 +1,13 @@
+{
+    "data_set": "swiss_roll",
+    "num_samples": 1000,
+    "num_clusters": 6,
+    "projector": "phate",
+    "random_state": 42,
+    "homology_max_dim": 1,
+    "normalize": true,
+    "diagram_metric": "landscape",
+    "dendrogram_cut": 0.02,
+    "linkage": "average",
+    "num_pca_components": 20,
+}

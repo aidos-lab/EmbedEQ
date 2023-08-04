@@ -54,7 +54,13 @@ if __name__ == "__main__":
         default=0,
         help="Position in coordinate space.",
     )
-
+    parser.add_argument(
+        "-s",
+        "--seed",
+        default=params_json["random_state"],
+        type=int,
+        help="Random Seed for reproducing Sklearn Datasets.",
+    )
     parser.add_argument(
         "-v",
         "--Verbose",
@@ -65,18 +71,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     this = sys.modules[__name__]
-
-    rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
     # Original Space
     if args.i == -1:
+        id_ = "original space"
         generator = getattr(data, args.data)
-        X, C, labels = generator(N=args.num_samples)
-
-        D = pairwise_distances(X).max()
-        if params_json["normalize"]:
-            X /= D
-        dgms = rips.fit_transform(X)
-        results = {"diagram": dgms, "diameter": D, "hyperparams": "original space"}
+        X, labels = generator(
+            N=args.num_samples,
+            random_state=args.seed,
+            n_clusters=params_json["num_clusters"],
+        )
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
@@ -92,12 +95,20 @@ if __name__ == "__main__":
         assert os.path.isfile(in_file), "Invalid Projection"
 
         with open(in_file, "rb") as f:
-            X = pickle.load(f)
-        D = pairwise_distances(X["projection"]).max()
-        if params_json["normalize"]:
-            X["projection"] /= D
-        dgms = rips.fit_transform(X["projection"])
-        results = {"diagram": dgms, "diameter": D, "hyperparams": X["hyperparams"]}
+            reference = pickle.load(f)
+        id_ = reference["hyperparams"]
+        X = reference["projection"]
+
+    if params_json["normalize"]:
+        D = pairwise_distances(X)
+
+        max_D = D.max()
+        X /= max_D
+
+    # RIPSER
+    rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
+    dgms = rips.fit_transform(X)
+    results = {"diagram": dgms, "hyperparams": id_}
 
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(

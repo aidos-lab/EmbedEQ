@@ -5,23 +5,101 @@ import json
 import os
 import pickle
 from dotenv import load_dotenv
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.neighbors import kneighbors_graph
 
 
 def parameter_coordinates(hyper_params: dict, embedding):
 
-    assert embedding in ["umap", "tSNE"], f"{embedding} is not yet supported."
+    # TODO: Generalize formatting parameter grid search for different Embeddings
+    assert embedding in [
+        "umap",
+        "tSNE",
+        "phate",
+        "isomap",
+        "LLE",
+    ], f"{embedding} is not yet supported."
+    dim = hyper_params["dim"]
     if embedding == "umap":
         N = hyper_params["n_neighbors"]
         d = hyper_params["min_dist"]
-        n = hyper_params["dim"]
+        m = hyper_params["metric"]
+        reported_params = {
+            "n_neighbors": N,
+            "min_dist": d,
+            "metric": m,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, d, m, dim))
+
+    if embedding == "tSNE":
+        N = hyper_params["n_neighbors"]
+        ee = hyper_params["early_exaggeration"]
+
+        reported_params = {
+            "perplexity": N,
+            "early_exaggeration": ee,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, ee, dim))
+
+    if embedding == "phate":
+        knn = hyper_params["n_neighbors"]
+        gamma = hyper_params["gamma"]
+
+        reported_params = {
+            "knn": knn,
+            "gamma": gamma,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(knn, gamma, dim))
+
+    if embedding == "isomap":
+        N = hyper_params["n_neighbors"]
         m = hyper_params["metric"]
 
-        coordinates = list(itertools.product(N, d, n, m))
+        reported_params = {
+            "n_neighbors": N,
+            "metric": m,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, m, dim))
 
-    return coordinates
+    if embedding == "LLE":
+        N = hyper_params["n_neighbors"]
+        reg = hyper_params["reg"]
+
+        reported_params = {
+            "n_neighbors": N,
+            "reg": reg,
+            "dim": dim,
+        }
+        coordinates = list(itertools.product(N, reg, dim))
+
+    return coordinates, reported_params
+
+
+def assign_labels(data, n_clusters, k=10):
+    """Assign Labels for Sklearn Data Sets based on KNN Graphs"""
+
+    connectivity = kneighbors_graph(data, n_neighbors=k, include_self=False)
+    ward = AgglomerativeClustering(
+        n_clusters=n_clusters, connectivity=connectivity, linkage="ward"
+    ).fit(data)
+    labels = ward.labels_
+    return labels
+
+
+def load_local_data(name):
+    load_dotenv()
+    print(name)
+    file = os.getenv(name)
+    print(file)
+    return np.load(file)["data"]
 
 
 def get_diagrams(dir):
@@ -130,3 +208,64 @@ def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
     plt.ylabel(f"{distance} distance")
     plt.show()
     return d
+
+
+def subplot_grid(dir):
+    hashmap = {}
+    neighbors, dists = [], []
+    coords = []
+    for umap in os.listdir(dir):
+        with open(f"{dir}/{umap}", "rb") as f:
+            D = pickle.load(f)
+        projection = D["projection"]
+        params = D["hyperparams"][:2]
+        coords.append(params)
+        hashmap[str(params[:2]).replace(" ", "")] = projection
+        if D["hyperparams"][0] not in neighbors:
+            neighbors.append(D["hyperparams"][0])
+        if D["hyperparams"][1] not in dists:
+            dists.append(D["hyperparams"][1])
+
+    neighbors.sort()
+    dists.sort()
+    coords.sort()
+    return hashmap, neighbors, dists, coords
+
+
+def generate_hex_variations(n, hex_color="#636EFA"):
+    def hex_to_rgb(hex_color):
+        hex_color = hex_color.lstrip("#")
+        return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+
+    def rgb_to_hex(rgb_color):
+        return "#{:02x}{:02x}{:02x}".format(*rgb_color)
+
+    original_rgb = hex_to_rgb(hex_color)
+    variations = []
+
+    for i in range(1, n + 1):
+        r, g, b = original_rgb
+        # You can modify the values below to create different color variations.
+        r += 2 * i
+        g += 10 * i
+        new_rgb = (max(0, min(255, r)), max(0, min(255, g)), max(0, min(255, b)))
+        variations.append(rgb_to_hex(new_rgb))
+    assert len(variations) == len(np.unique(variations))
+    return variations
+
+
+def embedding_coloring(color_map, hex_color="#636EFA"):
+    count = Counter(color_map.values())[hex_color]
+
+    new_colors = generate_hex_variations(
+        count,
+        hex_color,
+    )
+
+    C = 0
+    for key in color_map:
+        if color_map[key] == hex_color:
+            color_map[key] = new_colors[C]
+            C += 1
+
+    return color_map

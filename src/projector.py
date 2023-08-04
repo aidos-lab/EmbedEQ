@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+import numpy as np
 
 import pickle
 import logging
@@ -38,6 +39,13 @@ if __name__ == "__main__":
         help="Set number of samples in data set",
     )
     parser.add_argument(
+        "-c",
+        "--num_clusters",
+        default=params_json["num_clusters"],
+        type=int,
+        help="Set number of samples in data set",
+    )
+    parser.add_argument(
         "-p",
         "--projector",
         type=str,
@@ -49,6 +57,13 @@ if __name__ == "__main__":
         type=int,
         default=0,
         help="Position in coordinate space.",
+    )
+    parser.add_argument(
+        "-s",
+        "--seed",
+        type=int,
+        default=params_json["random_state"],
+        help="Random Seed for reproducing Sklearn Datasets.",
     )
 
     parser.add_argument(
@@ -63,9 +78,19 @@ if __name__ == "__main__":
 
     generator = getattr(data, args.data)
     logging.info(f"Using generator routine {generator}")
+    X, labels = generator(
+        N=args.num_samples,
+        n_clusters=args.num_clusters,
+        random_state=args.seed,
+    )
+    # If classes are automatically generated, reset params file
+    params_json["num_clusters"] = len(np.unique(labels))
+    params_json["num_samples"] = len(X)
+    with open(JSON_PATH, "w") as f:
+        json.dump(params_json, f, indent=4)
 
-    X, C, labels = generator(N=args.num_samples)
     hyperparams = params_json["coordinates"][args.i]
+
     embedding = getattr(embeddings, args.projector)
     logging.info(f"Using embedding routine {embedding}")
     projection = embedding(X, hyperparams)

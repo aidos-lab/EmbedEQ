@@ -110,6 +110,8 @@ if __name__ == "__main__":
 
     if args.normalize:
         metric = f"normalized_{args.metric}"
+    else:
+        metric = args.metric
 
     # TOPOLOGICAL DISTANCES #
     keys, distances = pairwise_distance(in_dir, metric=args.metric)
@@ -131,7 +133,7 @@ if __name__ == "__main__":
     results = {
         "model": model,
         "hyperparams": {
-            "metric": metric,
+            "metric": args.metric,
             "cut": args.dendrogram_cut,
             "linkage": args.linkage,
         },
