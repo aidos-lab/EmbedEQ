@@ -1,16 +1,18 @@
 import numpy as np
-from utils import convert_to_gtda, get_diagrams
-from scipy.spatial import distance_matrix
 from gtda.diagrams import PairwiseDistance
+from scipy.spatial import distance_matrix
+
+from utils import get_diagrams, gtda_pad
 
 
 def pairwise_distance(
     folder,
+    dims,
     metric="bottleneck",
 ):
     keys, diagrams = get_diagrams(folder)
-    dgms = convert_to_gtda(diagrams)
-    distance_metric = PairwiseDistance(metric=metric)
+    dgms = gtda_pad(diagrams, dims)
+    distance_metric = PairwiseDistance(metric=metric, order=1)
     distance_metric.fit(dgms)
     distances = distance_metric.transform(dgms)
 

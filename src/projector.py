@@ -2,18 +2,16 @@
 
 import argparse
 import json
-import os
-import sys
-import numpy as np
-
-import pickle
 import logging
+import os
+import pickle
+import sys
 
+import numpy as np
 from dotenv import load_dotenv
 
-import embeddings
 import data
-
+import embeddings
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -83,6 +81,7 @@ if __name__ == "__main__":
         n_clusters=args.num_clusters,
         random_state=args.seed,
     )
+    print(X.shape)
     # If classes are automatically generated, reset params file
     params_json["num_clusters"] = len(np.unique(labels))
     params_json["num_samples"] = len(X)

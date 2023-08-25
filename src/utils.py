@@ -4,11 +4,11 @@ import itertools
 import json
 import os
 import pickle
-from dotenv import load_dotenv
 from collections import Counter
 
 import matplotlib.pyplot as plt
 import numpy as np
+from dotenv import load_dotenv
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
 
@@ -96,9 +96,7 @@ def assign_labels(data, n_clusters, k=10):
 
 def load_local_data(name):
     load_dotenv()
-    print(name)
     file = os.getenv(name)
-    print(file)
     return np.load(file)["data"]
 
 
@@ -122,7 +120,51 @@ def get_diagrams(dir):
     return keys, diagrams
 
 
-def convert_to_gtda(diagrams):
+def gtda_pad(diagrams, dims=(0, 1)):
+    feature_counts = {}
+    for i, diagram in enumerate(diagrams):
+        feature_dims = diagram[:, 2:]
+        tmp = {}
+        for dim in dims:
+            num_features = sum(np.where(feature_dims == dim, True, False))[0]
+            tmp[dim] = num_features
+        feature_counts[i] = tmp
+
+    sizes = {}
+    for dim in dims:
+        counter = []
+        for id in feature_counts:
+            counter.append(feature_counts[id][dim])
+        sizes[dim] = max(counter)
+
+    total_features = sum(sizes.values())
+    new_diagrams = np.empty(
+        (
+            len(diagrams),
+            total_features,
+            3,
+        )
+    )
+
+    for i, diagram in enumerate(diagrams):
+
+        start = 0
+        for dim in dims:
+            sub_length = start + feature_counts[i][dim]
+            pad_length = start + sizes[dim]
+            sub = diagram[start:sub_length, :]
+            new_diagrams[i, start:sub_length, :] = sub
+
+            padding = np.zeros(
+                shape=(1, pad_length - sub_length, 3),
+            )
+            padding[:, :, 2:] = int(dim)
+            new_diagrams[i, sub_length:pad_length, :] = padding
+            start = pad_length
+    return new_diagrams
+
+
+def ripser_to_gtda(diagrams):
     homology_dimensions = (0, 1)
 
     slices = {

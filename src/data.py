@@ -1,8 +1,8 @@
 """Data set generator methods."""
 
 import numpy as np
-from utils import assign_labels, load_local_data
 
+from utils import assign_labels, load_local_data
 
 ################################################################################################
 ################                    Real Datasets                               ################
@@ -10,10 +10,8 @@ from utils import assign_labels, load_local_data
 
 
 def ipsc(**kwargs):
-    print("HERE WE GO")
     data = load_local_data("ipsc")
-    print(data)
-    labels = assign_labels(data, n_clusters=kwargs["n_clusters"])
+    labels = []
 
     return data, labels
 

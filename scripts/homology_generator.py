@@ -12,7 +12,6 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -70,7 +69,7 @@ if __name__ == "__main__":
 
     ### Generate Diagrams
 
-    logging.info(f"Computing Persistent Homology with Ripser")
+    logging.info(f"Computing Persistent Homology")
     logging.info(f"Number of diagrams to generate: {num_loops}")
     logging.info(f"Maximum Homology Dim: {args.homology_max_dim}")
 
@@ -78,13 +77,13 @@ if __name__ == "__main__":
     #     logging.info(f"Interval Subset: {args.subset}")
     #     parameter_space = args.subset
 
-    ripserer = os.path.join(root, "src/ripserer.py")
+    homology = os.path.join(root, "src/homology.py")
     subprocesses = []
     ## GRID SEARCH PROJECTIONS
     for i in range(len(params_json["coordinates"])):
         cmd = [
             "python",
-            f"{ripserer}",
+            f"{homology}",
             f"-i {i}",
             f"-M {args.homology_max_dim}",
         ]

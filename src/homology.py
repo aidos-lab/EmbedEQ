@@ -1,15 +1,16 @@
 import argparse
 import json
+import logging
 import os
 import pickle
 import sys
-import logging
-import data
 
+import numpy as np
 from dotenv import load_dotenv
-
-import ripser
+from gtda.homology import WeakAlphaPersistence
 from sklearn.metrics import pairwise_distances
+
+import data
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -105,9 +106,11 @@ if __name__ == "__main__":
         max_D = D.max()
         X /= max_D
 
-    # RIPSER
-    rips = ripser.Rips(maxdim=args.homology_max_dim, verbose=args.Verbose)
-    dgms = rips.fit_transform(X)
+    # Compute Homology
+    dims = tuple(range(args.homology_max_dim + 1))
+    alpha = WeakAlphaPersistence(homology_dimensions=dims)
+    X = X.reshape(1, *X.shape)
+    dgms = np.squeeze(alpha.fit_transform(X))
     results = {"diagram": dgms, "hyperparams": id_}
 
     out_file = f"diagram_{args.i}.pkl"
