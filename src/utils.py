@@ -50,13 +50,15 @@ def parameter_coordinates(hyper_params: dict, embedding):
     if embedding == "phate":
         knn = hyper_params["n_neighbors"]
         gamma = hyper_params["gamma"]
+        metric = hyper_params["metric"]
 
         reported_params = {
             "knn": knn,
             "gamma": gamma,
+            "metric": metric,
             "dim": dim,
         }
-        coordinates = list(itertools.product(knn, gamma, dim))
+        coordinates = list(itertools.product(knn, gamma, metric, dim))
 
     if embedding == "isomap":
         N = hyper_params["n_neighbors"]
@@ -97,7 +99,7 @@ def assign_labels(data, n_clusters, k=10):
 def load_local_data(name):
     load_dotenv()
     file = os.getenv(name)
-    return np.load(file)["data"]
+    return np.load(file, allow_pickle=True)
 
 
 def get_diagrams(dir):
@@ -138,29 +140,26 @@ def gtda_pad(diagrams, dims=(0, 1)):
         sizes[dim] = max(counter)
 
     total_features = sum(sizes.values())
-    new_diagrams = np.empty(
-        (
+    new_diagrams = np.zeros(
+        shape=(
             len(diagrams),
             total_features,
             3,
-        )
+        ),
     )
 
     for i, diagram in enumerate(diagrams):
-
-        start = 0
+        idx = 0
         for dim in dims:
-            sub_length = start + feature_counts[i][dim]
-            pad_length = start + sizes[dim]
-            sub = diagram[start:sub_length, :]
-            new_diagrams[i, start:sub_length, :] = sub
+            len_sub_dgm = idx + feature_counts[i][dim]
+            len_padded = idx + sizes[dim]
+            sub = diagram[idx:len_sub_dgm, :]
+            if len(sub) > 0:
+                new_diagrams[i, idx:len_sub_dgm, :] = sub
 
-            padding = np.zeros(
-                shape=(1, pad_length - sub_length, 3),
-            )
-            padding[:, :, 2:] = int(dim)
-            new_diagrams[i, sub_length:pad_length, :] = padding
-            start = pad_length
+            new_diagrams[i, idx:len_padded, 2:] = int(dim)
+            print(new_diagrams[i, idx:len_padded, 2:])
+            idx = len_padded
     return new_diagrams
 
 
