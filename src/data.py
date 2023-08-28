@@ -1,17 +1,26 @@
 """Data set generator methods."""
 
+import os
+
 import numpy as np
+from dotenv import load_dotenv
 
 from utils import assign_labels, load_local_data
 
 ################################################################################################
-################                    Real Datasets                               ################
+################                    Benchmark Datasets                          ################
 ################################################################################################
 
 
+def mnist(**kwargs):
+    bundle = load_local_data("mnist")
+    data, labels = bundle["data"], bundle["labels"]
+    return data, labels
+
+
 def ipsc(**kwargs):
-    data = load_local_data("ipsc")
-    labels = []
+    data = load_local_data("ipsc")["data"]
+    labels = np.zeros(len(data))
 
     return data, labels
 
