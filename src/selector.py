@@ -1,13 +1,14 @@
 import argparse
 import json
+import logging
 import os
 import pickle
 import sys
-import logging
 
 import numpy as np
 from dotenv import load_dotenv
-from selection_criteria import min_topological_distance
+
+from selection_criteria import *
 
 
 def embedding_selector(

@@ -81,7 +81,6 @@ if __name__ == "__main__":
         n_clusters=args.num_clusters,
         random_state=args.seed,
     )
-    print(X.shape)
     # If classes are automatically generated, reset params file
     params_json["num_clusters"] = len(np.unique(labels))
     params_json["num_samples"] = len(X)

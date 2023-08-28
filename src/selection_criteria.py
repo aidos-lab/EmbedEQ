@@ -1,6 +1,10 @@
 "Functions to determine token embedding selection from an equivalency class"
 
+import json
+import os
+
 import numpy as np
+from dotenv import load_dotenv
 
 
 def min_topological_distance(keys, labels, distances, id_, **kwargs):
@@ -24,3 +28,49 @@ def min_topological_distance(keys, labels, distances, id_, **kwargs):
         idx = np.where(original_distances == min_dist)[0][0]
         selection[label] = keys[idx]
     return selection
+
+
+def best_clustering_score(
+    keys,
+    labels,
+    **kwargs,
+):
+    # TODO: Implement best clustering accuracy
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import accuracy_score
+
+    import data
+    from utils import subplot_grid
+
+    load_dotenv()
+    root = os.getenv("root")
+    JSON_PATH = os.getenv("params")
+    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
+    with open(JSON_PATH, "r") as f:
+        params_json = json.load(f)
+
+    generator = getattr(data, params_json["data_set"])
+    _, labels = generator()
+    in_dir = os.path.join(
+        root,
+        "data/"
+        + params_json["data_set"]
+        + "/projections/"
+        + params_json["projector"]
+        + "/",
+    )
+    n_clusters = len(np.unique(labels))
+    hashmap, _, _, coords = subplot_grid(in_dir)
+
+    scores = {}
+    for coord in coords:
+        ref = str(coord).replace(" ", "")
+        # Get Embedding
+        X = hashmap[ref]
+        # Fit Kmeans
+        pred = KMeans(n_clusters=n_clusters, n_init="auto").fit_predict(X)
+        score = accuracy_score(labels, pred)
+
+        scores[ref] = score
+
+    return scores
