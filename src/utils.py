@@ -4,11 +4,11 @@ import itertools
 import json
 import os
 import pickle
-from dotenv import load_dotenv
 from collections import Counter
 
 import matplotlib.pyplot as plt
 import numpy as np
+from dotenv import load_dotenv
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
 
@@ -50,13 +50,15 @@ def parameter_coordinates(hyper_params: dict, embedding):
     if embedding == "phate":
         knn = hyper_params["n_neighbors"]
         gamma = hyper_params["gamma"]
+        metric = hyper_params["metric"]
 
         reported_params = {
             "knn": knn,
             "gamma": gamma,
+            "metric": metric,
             "dim": dim,
         }
-        coordinates = list(itertools.product(knn, gamma, dim))
+        coordinates = list(itertools.product(knn, gamma, metric, dim))
 
     if embedding == "isomap":
         N = hyper_params["n_neighbors"]
@@ -96,10 +98,8 @@ def assign_labels(data, n_clusters, k=10):
 
 def load_local_data(name):
     load_dotenv()
-    print(name)
     file = os.getenv(name)
-    print(file)
-    return np.load(file)["data"]
+    return np.load(file, allow_pickle=True)
 
 
 def get_diagrams(dir):
@@ -122,7 +122,52 @@ def get_diagrams(dir):
     return keys, diagrams
 
 
-def convert_to_gtda(diagrams):
+def gtda_pad(diagrams, dims=(0, 1)):
+    homology_dims = {}
+    sizes = {}
+    for i, diagram in enumerate(diagrams):
+        tmp = {}
+        counter = {}
+        for dim in dims:
+            # Generate Sub Diagram for particular dim
+            sub_dgm = diagram[diagram[:, 2] == dim]
+            counter[dim] = len(sub_dgm)
+            tmp[dim] = sub_dgm
+
+        homology_dims[i] = tmp
+        sizes[i] = counter
+
+    # Building Padded Diagram Template
+    total_features = 0
+    template_sizes = {}
+    for dim in dims:
+        size = max([dgm_id[dim] for dgm_id in sizes.values()])
+        template_sizes[dim] = size
+        total_features += size
+
+    template = np.zeros(
+        (
+            len(diagrams),
+            total_features,
+            3,
+        )
+    )
+    # Populate Template
+    for i in range(len(diagrams)):
+        pos = 0  # position in template
+        for dim in dims:
+            original_len = pos + sizes[i][dim]
+            template_len = pos + template_sizes[dim]
+            template[i, pos:original_len, :] = homology_dims[i][dim]
+
+            template[i, pos:template_len, 2] = int(dim)
+            # Reset position for next dimension
+            pos += template_sizes[dim]
+
+    return template
+
+
+def ripser_to_gtda(diagrams):
     homology_dimensions = (0, 1)
 
     slices = {

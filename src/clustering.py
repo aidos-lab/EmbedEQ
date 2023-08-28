@@ -114,7 +114,8 @@ if __name__ == "__main__":
         metric = args.metric
 
     # TOPOLOGICAL DISTANCES #
-    keys, distances = pairwise_distance(in_dir, metric=args.metric)
+    dims = tuple(range(params_json["homology_max_dim"] + 1))
+    keys, distances = pairwise_distance(in_dir, dims=dims, metric=args.metric)
     distance_matrix = {"keys": keys, "distances": distances}
     distances_out_dir = os.path.join(out_dir, "distance_matrices")
     if not os.path.isdir(distances_out_dir):

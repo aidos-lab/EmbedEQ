@@ -3,7 +3,7 @@
 ##################################################
 
 
-params.json
+experiments/exp*.json
 *.ipynb
 .env
 .vscode

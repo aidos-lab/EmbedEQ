@@ -8,17 +8,17 @@ import warnings
 
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 
-
 warnings.filterwarnings("ignore", category=NumbaDeprecationWarning)
 warnings.filterwarnings("ignore", category=NumbaPendingDeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning, module="umap")
 warnings.simplefilter("ignore")
 
 os.environ["KMP_WARNINGS"] = "off"
-######################################################################")
-from umap import UMAP
 from phate import PHATE
 from sklearn.manifold import TSNE, Isomap, LocallyLinearEmbedding
+
+######################################################################")
+from umap import UMAP
 
 
 def umap(data, hyperparams, seed=0, **kwargs):
@@ -47,11 +47,12 @@ def tSNE(data, hyperparams, seed=0, **kwargs):
 
 
 def phate(data, hyperparams, seed=0, **kwargs):
-    knn, gamma, dim = hyperparams
+    knn, gamma, metric, dim = hyperparams
     operator = PHATE(
         n_components=dim,
         knn=knn,
         gamma=gamma,
+        knn_dist=metric,
         random_state=seed,
         verbose=0,
     )

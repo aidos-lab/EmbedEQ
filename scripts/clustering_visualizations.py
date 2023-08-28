@@ -74,7 +74,7 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
 
     fig.update_layout(
         width=1500,
-        height=500,
+        height=800,
         template="simple_white",
         showlegend=True,
         font=dict(color="black"),
@@ -158,6 +158,7 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
 
     fig.update_layout(
         width=1500,
+        height=1000,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),
@@ -387,7 +388,8 @@ if __name__ == "__main__":
     # New colors
     token_color_map = embedding_coloring(colormap)
     token_figure = visualize_token_umaps(projections_dir, tokens, token_color_map)
-    out_file = f"{args.data}_equivalence_classes.html"
+    dendrogram_cut = params_json["dendrogram_cut"]
+    out_file = f"{args.data}__{metric}_{dendrogram_cut}_equivalence_classes.html"
     out_dir = os.path.join(
         root,
         "data/" + params_json["data_set"] + "/synopsis/" + params_json["projector"],
