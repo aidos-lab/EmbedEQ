@@ -74,7 +74,7 @@ def visualize_token_umaps(dir, tokens, dendrogram_colors):
 
     fig.update_layout(
         width=1500,
-        height=500,
+        height=800,
         template="simple_white",
         showlegend=True,
         font=dict(color="black"),
@@ -158,6 +158,7 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
 
     fig.update_layout(
         width=1500,
+        height=1000,
         template="simple_white",
         showlegend=False,
         font=dict(color="black"),

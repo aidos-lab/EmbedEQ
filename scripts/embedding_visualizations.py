@@ -1,8 +1,8 @@
 import json
+import logging
 import os
 import pickle
 import sys
-
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,6 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from dotenv import load_dotenv
 from plotly.subplots import make_subplots
-import logging
 
 
 def visualize_umaps(dir, labels):
@@ -148,7 +147,6 @@ if __name__ == "__main__":
     root = os.getenv("root")
     sys.path.append(root + "src/")
     import data
-
     from utils import subplot_grid
 
     JSON_PATH = os.getenv("params")
