@@ -12,6 +12,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dotenv import load_dotenv
 from tqdm import tqdm
 
+n_cpus = int(os.cpu_count() / 2)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -44,6 +46,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-f",
+        "--filter",
+        default=params_json["filtration"],
+        type=str,
+        help="Filtration abbreviation, e.g. `rips` for Vietoris Rips.",
+    )
+
+    parser.add_argument(
         "-s",
         "--subset",
         default=None,
@@ -69,7 +79,7 @@ if __name__ == "__main__":
 
     ### Generate Diagrams
 
-    logging.info(f"Computing Persistent Homology")
+    logging.info(f"Computing Persistent Homology with `{args.filter}` Filtration")
     logging.info(f"Number of diagrams to generate: {num_loops}")
     logging.info(f"Maximum Homology Dim: {args.homology_max_dim}")
 
@@ -91,7 +101,7 @@ if __name__ == "__main__":
 
     # Running processes in Parallel
     # TODO: optimize based on max_workers
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=n_cpus) as executor:
         futures = [executor.submit(subprocess.run, cmd) for cmd in subprocesses]
         # Setting Progress bar to track number of completed subprocesses
         progress_bar = tqdm(total=num_loops, desc="Progress", unit="subprocess")
