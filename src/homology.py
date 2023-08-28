@@ -7,7 +7,7 @@ import sys
 
 import numpy as np
 from dotenv import load_dotenv
-from gtda.homology import WeakAlphaPersistence
+from gtda.homology import VietorisRipsPersistence, WeakAlphaPersistence
 from sklearn.metrics import pairwise_distances
 
 import data
@@ -81,6 +81,9 @@ if __name__ == "__main__":
             random_state=args.seed,
             n_clusters=params_json["num_clusters"],
         )
+        if len(X) > 100000:
+            print("Data Set is too large to compute pairwise distances")
+            sys.exit(-1)
 
     else:
         in_file = f"{args.projector}_{args.i}.pkl"
@@ -101,16 +104,30 @@ if __name__ == "__main__":
         X = reference["projection"]
 
     if params_json["normalize"]:
-        D = pairwise_distances(X)
+        if len(X) > 10000:
+            print("Data Set is too large to compute pairwise distances")
+            sys.exit(-1)
+        else:
+            D = pairwise_distances(X)
 
-        max_D = D.max()
-        X /= max_D
+            max_D = D.max()
+            X /= max_D
+
+    assert params_json["filtration"] in [
+        "rips",
+        "alpha",
+    ], "Only support Alpha and Vietoris-Rips filtrations currently"
+
+    if params_json["filtration"] == "rips":
+        PH = VietorisRipsPersistence
+    if params_json["filtration"] == "alpha":
+        PH = WeakAlphaPersistence
 
     # Compute Homology
     dims = tuple(range(args.homology_max_dim + 1))
-    alpha = WeakAlphaPersistence(homology_dimensions=dims)
+    model = PH(homology_dimensions=dims)
     X = X.reshape(1, *X.shape)
-    dgms = np.squeeze(alpha.fit_transform(X))
+    dgms = np.squeeze(model.fit_transform(X))
     results = {"diagram": dgms, "hyperparams": id_}
 
     out_file = f"diagram_{args.i}.pkl"
