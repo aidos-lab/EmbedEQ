@@ -111,7 +111,7 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
     """
     hashmap, neighbors, dists, coords = subplot_grid(dir)
     num_rows = len(dists)
-    num_cols = len(neighbors)
+    num_cols = len(neighbors) * 2
 
     fig = make_subplots(
         rows=num_rows,
@@ -121,7 +121,8 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
         row_titles=list(map(str, dists)),
         y_title="min_dist",
     )
-    keys.remove(id_)
+    if id_:
+        keys.remove(id_)
     row = 1
     col = 1
 
@@ -138,10 +139,11 @@ def visualize_clustered_umaps(dir, keys, dendrogram_colors, id_="original space"
         color = dendrogram_colors[ref]
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
 
+        sub_df = df.sample(n=10000)
         fig.add_trace(
             go.Scatter(
-                x=df["x"],
-                y=df["y"],
+                x=sub_df["x"],
+                y=sub_df["y"],
                 mode="markers",
                 marker=dict(
                     size=4,
@@ -359,8 +361,8 @@ if __name__ == "__main__":
     with open(model_in_file, "rb") as M:
         model = pickle.load(M)["model"]
 
-    with open(selection_in_file, "rb") as s:
-        tokens = pickle.load(s)
+    # with open(selection_in_file, "rb") as s:
+    #     tokens = pickle.load(s)
 
     labels = []
     for i, key in enumerate(keys):
@@ -381,13 +383,13 @@ if __name__ == "__main__":
 
     # CLUSTERED PROJECTIONS
     projection_figure = visualize_clustered_umaps(
-        projections_dir, keys=keys, dendrogram_colors=colormap, id_=id_
+        projections_dir, keys=keys, dendrogram_colors=colormap, id_=None
     )
 
     # SELECTED EMBEDDINGS
     # New colors
-    token_color_map = embedding_coloring(colormap)
-    token_figure = visualize_token_umaps(projections_dir, tokens, token_color_map)
+    # token_color_map = embedding_coloring(colormap)
+    # token_figure = visualize_token_umaps(projections_dir, tokens, token_color_map)
     dendrogram_cut = params_json["dendrogram_cut"]
     out_file = f"{args.data}__{metric}_{dendrogram_cut}_equivalence_classes.html"
     out_dir = os.path.join(
@@ -398,6 +400,4 @@ if __name__ == "__main__":
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir, exist_ok=True)
     out_file = os.path.join(out_dir, out_file)
-    save_visualizations_as_html(
-        [plotly_dendo, projection_figure, token_figure], out_file
-    )
+    save_visualizations_as_html([plotly_dendo, projection_figure], out_file)

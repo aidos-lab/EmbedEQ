@@ -29,7 +29,7 @@ def visualize_umaps(dir, labels):
     """
     hashmap, neighbors, dists, coords = subplot_grid(dir)
     num_rows = len(dists)
-    num_cols = len(neighbors)
+    num_cols = len(neighbors) * 2
 
     fig = make_subplots(
         rows=num_rows,
@@ -48,14 +48,16 @@ def visualize_umaps(dir, labels):
 
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
         df["labels"] = labels
+
+        sub_df = df.sample(n=10000)
         fig.add_trace(
             go.Scatter(
-                x=df["x"],
-                y=df["y"],
+                x=sub_df["x"],
+                y=sub_df["y"],
                 mode="markers",
                 marker=dict(
                     size=4,
-                    color=df["labels"],
+                    color=sub_df["labels"],
                     cmid=0.3,
                     colorscale="jet",
                 ),
