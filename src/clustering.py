@@ -113,17 +113,26 @@ if __name__ == "__main__":
     else:
         metric = args.metric
 
-    # TOPOLOGICAL DISTANCES #
-    dims = tuple(range(params_json["homology_max_dim"] + 1))
-    keys, distances = pairwise_distance(in_dir, dims=dims, metric=args.metric)
-    distance_matrix = {"keys": keys, "distances": distances}
     distances_out_dir = os.path.join(out_dir, "distance_matrices")
     if not os.path.isdir(distances_out_dir):
         os.makedirs(distances_out_dir, exist_ok=True)
     distances_out_file = f"{metric}_pairwise_distances.pkl"
     distances_out_file = os.path.join(distances_out_dir, distances_out_file)
-    with open(distances_out_file, "wb") as f:
-        pickle.dump(distance_matrix, f)
+
+    # If Distances have already been computed
+    if not os.path.isfile(distances_out_file):
+        # TOPOLOGICAL DISTANCES #
+        dims = tuple(range(params_json["homology_max_dim"] + 1))
+        keys, distances = pairwise_distance(in_dir, dims=dims, metric=args.metric)
+        distance_matrix = {"keys": keys, "distances": distances}
+        with open(distances_out_file, "wb") as f:
+            pickle.dump(distance_matrix, f)
+    else:
+        logging.info(f"Distances for {metric} have already been computed.")
+        with open(distances_out_file, "rb") as f:
+            distance_matrix = pickle.load(f)
+        keys = distance_matrix["keys"]
+        distances = distance_matrix["distances"]
 
     # HIERARCHICHAL CLUSTERING #
     model = cluster_models(
