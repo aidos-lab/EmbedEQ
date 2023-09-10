@@ -259,8 +259,8 @@ def subplot_grid(dir):
     hashmap = {}
     neighbors, dists = [], []
     coords = []
-    for umap in os.listdir(dir):
-        with open(f"{dir}/{umap}", "rb") as f:
+    for file in os.listdir(dir):
+        with open(f"{dir}/{file}", "rb") as f:
             D = pickle.load(f)
         projection = D["projection"]
         params = D["hyperparams"][:2]

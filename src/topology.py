@@ -10,9 +10,10 @@ def pairwise_distance(
     dims,
     metric="bottleneck",
 ):
+
     keys, diagrams = get_diagrams(folder)
     dgms = gtda_pad(diagrams, dims)
-    distance_metric = PairwiseDistance(metric=metric, order=1)
+    distance_metric = PairwiseDistance(metric=metric, order=2)
     distance_metric.fit(dgms)
     distances = distance_metric.transform(dgms)
 

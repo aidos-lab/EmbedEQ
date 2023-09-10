@@ -158,6 +158,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/projections/"
         + params_json["projector"]
         + "/",
@@ -181,7 +183,12 @@ if __name__ == "__main__":
     out_file = f"{data_set}_embedding_summary.html"
     out_dir = os.path.join(
         root,
-        "data/" + params_json["data_set"] + "/synopsis/" + params_json["projector"],
+        "data/"
+        + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
+        + "/synopsis/"
+        + params_json["projector"],
     )
 
     if not os.path.isdir(out_dir):

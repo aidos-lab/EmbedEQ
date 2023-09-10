@@ -55,6 +55,8 @@ def best_clustering_score(
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/projections/"
         + params_json["projector"]
         + "/",

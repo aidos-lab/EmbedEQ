@@ -99,13 +99,21 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/diagrams/"
         + params_json["projector"]
         + "/",
     )
     out_dir = os.path.join(
         root,
-        "data/" + params_json["data_set"] + "/EQC/" + params_json["projector"] + "/",
+        "data/"
+        + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
+        + "/EQC/"
+        + params_json["projector"]
+        + "/",
     )
 
     if args.normalize:

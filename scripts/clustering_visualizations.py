@@ -311,6 +311,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/projections/"
         + params_json["projector"]
         + "/",
@@ -319,6 +321,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/diagrams/"
         + params_json["projector"]
         + "/",
@@ -327,6 +331,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/EQC/"
         + params_json["projector"]
         + "/distance_matrices/"
@@ -336,6 +342,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/EQC/"
         + params_json["projector"]
         + "/models/"
@@ -346,6 +354,8 @@ if __name__ == "__main__":
         root,
         "data/"
         + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
         + "/EQC/"
         + params_json["projector"]
         + "/selected_embeddings/"
@@ -356,6 +366,7 @@ if __name__ == "__main__":
         reference = pickle.load(D)
 
     keys, distances = reference["keys"], reference["distances"]
+
     with open(model_in_file, "rb") as M:
         model = pickle.load(M)["model"]
 
@@ -392,7 +403,12 @@ if __name__ == "__main__":
     out_file = f"{args.data}__{metric}_{dendrogram_cut}_equivalence_classes.html"
     out_dir = os.path.join(
         root,
-        "data/" + params_json["data_set"] + "/synopsis/" + params_json["projector"],
+        "data/"
+        + params_json["data_set"]
+        + "/"
+        + params_json["run_name"]
+        + "/synopsis/"
+        + params_json["projector"],
     )
 
     if not os.path.isdir(out_dir):
