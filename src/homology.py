@@ -11,6 +11,7 @@ from gtda.homology import VietorisRipsPersistence, WeakAlphaPersistence
 from sklearn.metrics import pairwise_distances
 
 import data
+from utils import format_arguments
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -72,10 +73,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     this = sys.modules[__name__]
+
+    data_, projector_ = format_arguments([args.data, args.projector])
+
     # Original Space
     if args.i == -1:
         id_ = "original space"
-        generator = getattr(data, args.data)
+        generator = getattr(data, data_)
         X, labels = generator(
             N=args.num_samples,
             random_state=args.seed,
@@ -86,15 +90,15 @@ if __name__ == "__main__":
             sys.exit(-1)
 
     else:
-        in_file = f"{args.projector}_{args.i}.pkl"
+        in_file = f"{projector_}_{args.i}.pkl"
         in_dir = os.path.join(
             root,
             "data/"
-            + params_json["data_set"]
+            + data_
             + "/"
             + params_json["run_name"]
             + "/projections/"
-            + params_json["projector"]
+            + projector_
             + "/",
         )
         in_file = os.path.join(in_dir, in_file)
@@ -136,11 +140,11 @@ if __name__ == "__main__":
     out_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/diagrams/"
-        + params_json["projector"]
+        + projector_
         + "/",
     )
 

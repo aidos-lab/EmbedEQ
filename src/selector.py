@@ -9,6 +9,7 @@ import numpy as np
 from dotenv import load_dotenv
 
 from selection_criteria import *
+from utils import format_arguments
 
 
 def embedding_selector(
@@ -53,6 +54,13 @@ if __name__ == "__main__":
         help="Specify the data set.",
     )
     parser.add_argument(
+        "-p",
+        "--projector",
+        type=str,
+        default=params_json["projector"],
+        help="Set to the name of projector for dimensionality reduction. ",
+    )
+    parser.add_argument(
         "-m",
         "--metric",
         type=str,
@@ -92,6 +100,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
+    data_, projector_ = format_arguments([args.data, args.projector])
     if args.normalize:
         metric = f"normalized_{args.metric}"
     else:
@@ -100,42 +109,42 @@ if __name__ == "__main__":
     projections_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/projections/"
-        + params_json["projector"]
+        + projector_
         + "/",
     )
     diagrams_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/diagrams/"
-        + params_json["projector"]
+        + projector_
         + "/",
     )
     distances_in_file = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/EQC/"
-        + params_json["projector"]
+        + projector_
         + "/distance_matrices/"
         + f"{metric}_pairwise_distances.pkl",
     )
     model_in_file = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/EQC/"
-        + params_json["projector"]
+        + projector_
         + "/models/"
         + f"embedding_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl",
     )
@@ -154,11 +163,11 @@ if __name__ == "__main__":
     out_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/EQC/"
-        + params_json["projector"]
+        + projector_
         + "/selected_embeddings/",
     )
 

@@ -85,6 +85,10 @@ def parameter_coordinates(hyper_params: dict, embedding):
     return coordinates, reported_params
 
 
+def format_arguments(args: list):
+    return (arg.strip() for arg in args)
+
+
 def assign_labels(data, n_clusters, k=10):
     """Assign Labels for Sklearn Data Sets based on KNN Graphs"""
 
@@ -255,7 +259,7 @@ def plot_dendrogram(model, labels, distance, p, distance_threshold, **kwargs):
     return d
 
 
-def subplot_grid(dir):
+def subplot_grid(dir, sample_size):
     hashmap = {}
     neighbors, dists = [], []
     coords = []
@@ -263,13 +267,14 @@ def subplot_grid(dir):
         with open(f"{dir}/{file}", "rb") as f:
             D = pickle.load(f)
         projection = D["projection"]
-        params = D["hyperparams"][:2]
-        coords.append(params)
-        hashmap[str(params[:2]).replace(" ", "")] = projection
-        if D["hyperparams"][0] not in neighbors:
-            neighbors.append(D["hyperparams"][0])
-        if D["hyperparams"][1] not in dists:
-            dists.append(D["hyperparams"][1])
+        if len(projection) == sample_size:
+            params = D["hyperparams"][:2]
+            coords.append(params)
+            hashmap[str(params[:2]).replace(" ", "")] = projection
+            if D["hyperparams"][0] not in neighbors:
+                neighbors.append(D["hyperparams"][0])
+            if D["hyperparams"][1] not in dists:
+                dists.append(D["hyperparams"][1])
 
     neighbors.sort()
     dists.sort()

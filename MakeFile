@@ -13,9 +13,9 @@ run: embeddings homology
 
 selection:
 	@echo "Selecting Embeddings"
-	@python src/selector.py
+	@python scripts/selection_generator.py
 
-vis: clustering selection
+vis:
 	@echo "Generating Visualizations"
 	@python scripts/embedding_visualizations.py
 	@python scripts/clustering_visualizations.py
@@ -26,12 +26,11 @@ embeddings:
 
 homology:
 	@echo "Generating Persistence Diagrams"
-	@python src/homology.py -i -1
 	@python scripts/homology_generator.py
 
 clustering:
 	@echo "Computing Topolical Distances"
-	@python src/clustering.py
+	@python scripts/clustering_generator.py
 clean:
 	@rm -rf data/${DATA_SET}/diagrams/${PROJECTOR}/
 	@rm -rf data/${DATA_SET}/EQC/${PROJECTOR}/

@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from sklearn.cluster import AgglomerativeClustering
 
 from topology import pairwise_distance
+from utils import format_arguments
 
 
 def cluster_models(
@@ -52,6 +53,13 @@ if __name__ == "__main__":
         type=str,
         default=params_json["data_set"],
         help="Specify the data set.",
+    )
+    parser.add_argument(
+        "-p",
+        "--projector",
+        type=str,
+        default=params_json["projector"],
+        help="Set to the name of projector for dimensionality reduction. ",
     )
     parser.add_argument(
         "-m",
@@ -95,25 +103,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
+    data_, projector_ = format_arguments([args.data, args.projector])
+
     in_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/diagrams/"
-        + params_json["projector"]
+        + projector_
         + "/",
     )
     out_dir = os.path.join(
         root,
-        "data/"
-        + params_json["data_set"]
-        + "/"
-        + params_json["run_name"]
-        + "/EQC/"
-        + params_json["projector"]
-        + "/",
+        "data/" + data_ + "/" + params_json["run_name"] + "/EQC/" + projector_ + "/",
     )
 
     if args.normalize:

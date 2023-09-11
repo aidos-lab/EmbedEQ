@@ -8,14 +8,14 @@ import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-import numpy as np
 from dotenv import load_dotenv
-from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 from tqdm import tqdm
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+n_cpus = int(os.cpu_count() / 2)
 
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
     logging.basicConfig(
         format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -23,9 +23,6 @@ if __name__ == "__main__":
     )
     load_dotenv()
     root = os.getenv("root")
-    sys.path.append(root + "src")
-    from utils import parameter_coordinates
-
     JSON_PATH = os.getenv("params")
     assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
     with open(JSON_PATH, "r") as f:
@@ -38,7 +35,6 @@ if __name__ == "__main__":
         default=params_json["data_set"],
         help="Specify the data set.",
     )
-
     parser.add_argument(
         "-n",
         "--num_samples",
@@ -47,24 +43,11 @@ if __name__ == "__main__":
         help="Set number of samples in data set",
     )
     parser.add_argument(
-        "-c",
-        "--num_clusters",
-        default=params_json["num_clusters"],
-        type=int,
-        help="Set number of artifical clusters data set",
-    )
-    parser.add_argument(
+        "-p",
         "--projector",
         type=str,
         default=params_json["projector"],
         help="Set to the name of projector for dimensionality reduction. ",
-    )
-
-    parser.add_argument(
-        "--hyperparams",
-        default=params_json["hyperparams"],
-        type=dict,
-        help="Hyper parameters",
     )
 
     parser.add_argument(
@@ -78,44 +61,30 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
+    # Subprocesses
+    num_loops = len(args.data) * len(args.projector)
+    selector = os.path.join(root, "src/selector.py")
+    subprocesses = []
+    ### Generate Diagrams
     for alg in args.projector:
-        # Write Coordinates to JSON
-        parameter_space, reported_params = parameter_coordinates(
-            args.hyperparams, embedding=alg
-        )
         logging.info(f"Projector: {alg}")
-        logging.info(f"Data sets: {args.data}")
+        logging.info(f"Data Sets: {args.data}")
         logging.info(f"Sample Sizes: {args.num_samples}")
-        logging.info(f"Hyperparameters: {reported_params}")
-
-        params_json["coordinates"] = parameter_space
-        with open(JSON_PATH, "w") as f:
-            json.dump(params_json, f, indent=4)
-
-        # Subprocesses
-        num_loops = len(parameter_space) * len(args.data) * len(args.num_samples)
-
-        projector = os.path.join(root, "src/projector.py")
-        # Running Grid Search in Parallel
-        subprocesses = []
-        ## GRID SEARCH PROJECTIONS
+        logging.info(f"Number of Representatives to Select: {num_loops}")
         for dataset in args.data:
 
-            for sample_size in args.num_samples:
-                for i, coord in enumerate(parameter_space):
-                    cmd = [
-                        "python",
-                        f"{projector}",
-                        f"-i {i}",
-                        f"-p {alg}",
-                        f"-d {dataset}",
-                        f"-n {sample_size}",
-                    ]
-                    subprocesses.append(cmd)
+            for i in range(len(params_json["coordinates"])):
+                cmd = [
+                    "python",
+                    f"{selector}",
+                    f"-d {dataset}",
+                    f"-p {alg}",
+                ]
+                subprocesses.append(cmd)
 
         # Running processes in Parallel
         # TODO: optimize based on max_workers
-        with ProcessPoolExecutor(max_workers=4) as executor:
+        with ProcessPoolExecutor(max_workers=n_cpus) as executor:
             futures = [executor.submit(subprocess.run, cmd) for cmd in subprocesses]
             # Setting Progress bar to track number of completed subprocesses
             progress_bar = tqdm(total=num_loops, desc="Progress", unit="subprocess")

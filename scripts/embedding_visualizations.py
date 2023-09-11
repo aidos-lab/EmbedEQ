@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -13,7 +14,7 @@ from dotenv import load_dotenv
 from plotly.subplots import make_subplots
 
 
-def visualize_umaps(dir, labels):
+def visualize_projections(dir, labels):
     """
     Create a grid visualization of UMAP projections according .
 
@@ -27,9 +28,16 @@ def visualize_umaps(dir, labels):
     fig : plotly.graph_objects.Figure
         The Plotly figure object representing the UMAP grid visualization.
     """
-    hashmap, neighbors, dists, coords = subplot_grid(dir)
+    hashmap, neighbors, dists, coords = subplot_grid(dir, sample_size=len(labels))
     num_rows = len(dists)
     num_cols = len(neighbors)
+
+    print(neighbors)
+    print(dists)
+    print(coords)
+
+    print(num_rows)
+    print(num_cols)
 
     fig = make_subplots(
         rows=num_rows,
@@ -143,6 +151,12 @@ def save_visualizations_as_html(visualizations, output_file):
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    logging.basicConfig(
+        format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+    )
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "src/")
@@ -154,45 +168,87 @@ if __name__ == "__main__":
     with open(JSON_PATH, "r") as f:
         params_json = json.load(f)
 
-    in_dir = os.path.join(
-        root,
-        "data/"
-        + params_json["data_set"]
-        + "/"
-        + params_json["run_name"]
-        + "/projections/"
-        + params_json["projector"]
-        + "/",
+    parser.add_argument(
+        "-d",
+        "--data",
+        type=str,
+        default=params_json["data_set"],
+        help="Specify the data set.",
+    )
+    parser.add_argument(
+        "-n",
+        "--num_samples",
+        default=params_json["num_samples"],
+        type=int,
+        help="Set number of samples in data set",
+    )
+    parser.add_argument(
+        "-p",
+        "--projector",
+        type=str,
+        default=params_json["projector"],
+        help="Set to the name of projector for dimensionality reduction. ",
     )
 
-    generator = getattr(data, params_json["data_set"])
-    logging.info(f"Using generator routine {generator}")
-    X, labels = generator(
-        N=params_json["num_samples"],
-        random_state=params_json["random_state"],
-        n_clusters=params_json["num_clusters"],
-    )
-    try:
-        data_figure = visualize_data(X, labels)
-    except AssertionError:
-        data_figure = go.Figure()
-
-    projection_figure = visualize_umaps(in_dir, labels)
-
-    data_set = params_json["data_set"]
-    out_file = f"{data_set}_embedding_summary.html"
-    out_dir = os.path.join(
-        root,
-        "data/"
-        + params_json["data_set"]
-        + "/"
-        + params_json["run_name"]
-        + "/synopsis/"
-        + params_json["projector"],
+    parser.add_argument(
+        "-v",
+        "--Verbose",
+        default=False,
+        action="store_true",
+        help="If set, will print messages detailing computation and output.",
     )
 
-    if not os.path.isdir(out_dir):
-        os.makedirs(out_dir, exist_ok=True)
-    out_file = os.path.join(out_dir, out_file)
+    args = parser.parse_args()
+    this = sys.modules[__name__]
 
-    save_visualizations_as_html([data_figure, projection_figure], out_file)
+    num_loops = len(args.data) * len(args.projector) * len(args.num_samples)
+
+    logging.info("Generating Embedding Visualizations")
+    logging.info(f"Projectors: {args.projector}")
+    logging.info(f"Data Sets: {args.data}")
+    logging.info(f"Sample Sizes: {args.num_samples}")
+    logging.info(f"Number of Plots: {num_loops}")
+
+    for alg in args.projector:
+        for data_ in args.data:
+            for sample_size in args.num_samples:
+                in_dir = os.path.join(
+                    root,
+                    "data/"
+                    + data_
+                    + "/"
+                    + params_json["run_name"]
+                    + "/projections/"
+                    + alg
+                    + "/",
+                )
+
+                generator = getattr(data, data_)
+                X, labels = generator(
+                    N=sample_size,
+                    random_state=params_json["random_state"],
+                    n_clusters=params_json["num_clusters"],
+                )
+                try:
+                    data_figure = visualize_data(X, labels)
+                except AssertionError:
+                    data_figure = go.Figure()
+
+                projection_figure = visualize_projections(in_dir, labels)
+
+                out_file = f"{data_}_{sample_size}pts_embedding_summary.html"
+                out_dir = os.path.join(
+                    root,
+                    "data/"
+                    + data_
+                    + "/"
+                    + params_json["run_name"]
+                    + "/synopsis/"
+                    + alg,
+                )
+
+                if not os.path.isdir(out_dir):
+                    os.makedirs(out_dir, exist_ok=True)
+                out_file = os.path.join(out_dir, out_file)
+
+                save_visualizations_as_html([data_figure, projection_figure], out_file)

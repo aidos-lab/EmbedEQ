@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 import data
 import embeddings
+from utils import format_arguments
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -74,7 +75,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    generator = getattr(data, args.data)
+    data_, projector_ = format_arguments([args.data, args.projector])
+
+    generator = getattr(data, data_)
     logging.info(f"Using generator routine {generator}")
     X, labels = generator(
         N=args.num_samples,
@@ -83,25 +86,24 @@ if __name__ == "__main__":
     )
     # If classes are automatically generated, reset params file
     params_json["num_clusters"] = len(np.unique(labels))
-    params_json["num_samples"] = len(X)
     with open(JSON_PATH, "w") as f:
         json.dump(params_json, f, indent=4)
 
     hyperparams = params_json["coordinates"][args.i]
 
-    embedding = getattr(embeddings, args.projector)
+    embedding = getattr(embeddings, projector_)
     logging.info(f"Using embedding routine {embedding}")
     projection = embedding(X, hyperparams)
 
-    out_file = f"{args.projector}_{args.i}.pkl"
+    out_file = f"{projector_}_{args.i}.pkl"
     out_dir = os.path.join(
         root,
         "data/"
-        + params_json["data_set"]
+        + data_
         + "/"
         + params_json["run_name"]
         + "/projections/"
-        + params_json["projector"]
+        + projector_
         + "/",
     )
 
