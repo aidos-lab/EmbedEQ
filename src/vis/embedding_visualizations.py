@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import pickle
@@ -11,48 +10,55 @@ import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
 from plotly.subplots import make_subplots
 
 
-def visualize_projections(dir, labels):
+def visualize_projections(
+    dir,
+    labels,
+    metric="euclidean",
+):
     """
-    Create a grid visualization of UMAP projections according .
+    Create a grid visualization of Manifold Learning projections.
 
     Parameters:
     -----------
     dir : str
-        The directory containing the UMAP projections.
-
+        The directory containing the embeddings.
+    labels : list
+        A list of labels for each point in the embedding.
+    metric : str
+        The metric used to generate the embeddings.
     Returns:
     --------
     fig : plotly.graph_objects.Figure
         The Plotly figure object representing the UMAP grid visualization.
     """
-    hashmap, neighbors, dists, coords = subplot_grid(dir, sample_size=len(labels))
-    num_rows = len(dists)
-    num_cols = len(neighbors)
+    print(f"len labels: {len(labels)}")
+    hashmap, x, y, coords = subplot_grid(dir, sample_size=len(labels), metric=metric)
 
-    print(neighbors)
-    print(dists)
-    print(coords)
+    print(dir)
 
-    print(num_rows)
-    print(num_cols)
+    num_rows = len(x)
+    num_cols = len(y)
 
     fig = make_subplots(
         rows=num_rows,
         cols=num_cols,
-        column_titles=list(map(str, neighbors)),
-        x_title="n_neighbors",
-        row_titles=list(map(str, dists)),
-        y_title="min_dist",
+        column_titles=list(map(str, x)),
+        x_title="locality parameter",
+        row_titles=list(map(str, y)),
+        y_title="embedding regulator",
     )
 
     row = 1
     col = 1
     for coord in coords:
         ref = str(coord).replace(" ", "")
+        print(ref)
         proj_2d = hashmap[ref]
+        print(len(proj_2d))
 
         df = pd.DataFrame(proj_2d, columns=["x", "y"])
         df["labels"] = labels
@@ -72,7 +78,7 @@ def visualize_projections(dir, labels):
             col=col,
         )
         row += 1
-        if row == len(dists) + 1:
+        if row == len(y) + 1:
             row = 1
             col += 1
 
@@ -160,13 +166,13 @@ if __name__ == "__main__":
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "src/")
-    import data
+    import data as data
     from utils import subplot_grid
 
-    JSON_PATH = os.getenv("params")
-    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
-    with open(JSON_PATH, "r") as f:
-        params_json = json.load(f)
+    YAML_PATH = os.getenv("params")
+    assert os.path.isfile(YAML_PATH), "Please configure .env to point to params.yaml"
+    with open(YAML_PATH, "r") as f:
+        params_json = OmegaConf.load(YAML_PATH)
 
     parser.add_argument(
         "-d",
@@ -189,7 +195,13 @@ if __name__ == "__main__":
         default=params_json["projector"],
         help="Set to the name of projector for dimensionality reduction. ",
     )
-
+    parser.add_argument(
+        "-m",
+        "--metric",
+        type=str,
+        default=params_json["hyperparams"]["metric"],
+        help="Metric that determines embeddings.",
+    )
     parser.add_argument(
         "-v",
         "--Verbose",
@@ -212,43 +224,46 @@ if __name__ == "__main__":
     for alg in args.projector:
         for data_ in args.data:
             for sample_size in args.num_samples:
-                in_dir = os.path.join(
-                    root,
-                    "data/"
-                    + data_
-                    + "/"
-                    + params_json["run_name"]
-                    + "/projections/"
-                    + alg
-                    + "/",
-                )
+                for m in args.metric:
+                    in_dir = os.path.join(
+                        root,
+                        "data/"
+                        + data_
+                        + "/"
+                        + params_json["run_name"]
+                        + "/projections/"
+                        + alg
+                        + "/",
+                    )
 
-                generator = getattr(data, data_)
-                X, labels = generator(
-                    N=sample_size,
-                    random_state=params_json["random_state"],
-                    n_clusters=params_json["num_clusters"],
-                )
-                try:
-                    data_figure = visualize_data(X, labels)
-                except AssertionError:
-                    data_figure = go.Figure()
+                    generator = getattr(data, data_)
+                    X, labels = generator(
+                        N=sample_size,
+                        random_state=params_json["random_state"],
+                        n_clusters=params_json["num_clusters"],
+                    )
+                    try:
+                        data_figure = visualize_data(X, labels)
+                    except AssertionError:
+                        data_figure = go.Figure()
 
-                projection_figure = visualize_projections(in_dir, labels)
+                    projection_figure = visualize_projections(in_dir, labels, m)
 
-                out_file = f"{data_}_{sample_size}pts_embedding_summary.html"
-                out_dir = os.path.join(
-                    root,
-                    "data/"
-                    + data_
-                    + "/"
-                    + params_json["run_name"]
-                    + "/synopsis/"
-                    + alg,
-                )
+                    out_file = f"{data_}_{sample_size}pts_{m}_embedding_summary.html"
+                    out_dir = os.path.join(
+                        root,
+                        "data/"
+                        + data_
+                        + "/"
+                        + params_json["run_name"]
+                        + "/synopsis/"
+                        + alg,
+                    )
 
-                if not os.path.isdir(out_dir):
-                    os.makedirs(out_dir, exist_ok=True)
-                out_file = os.path.join(out_dir, out_file)
+                    if not os.path.isdir(out_dir):
+                        os.makedirs(out_dir, exist_ok=True)
+                    out_file = os.path.join(out_dir, out_file)
 
-                save_visualizations_as_html([data_figure, projection_figure], out_file)
+                    save_visualizations_as_html(
+                        [data_figure, projection_figure], out_file
+                    )

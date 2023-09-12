@@ -1,4 +1,2 @@
 root = "**PATH_TO_ROOT**/"
 params = "**PATH_TO_ROOT**/experiments/PARAMS_FILE_NAME"
-ipsc = "**PATH_TO_ROOT**/data/local_datasets/ipsc.npz"
-mnist = "**PATH_TO_ROOT**/data/local_datasets/mnist.npz"

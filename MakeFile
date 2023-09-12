@@ -1,15 +1,28 @@
 #Makefile
 include .env
 PARAMS_FILE := $(strip $(params))
-PARAMS_JSON := $(shell cat $(PARAMS_FILE))
-DATA_SET := $(shell echo '$(PARAMS_JSON)' | jq -r '.data_set')
-PROJECTOR := $(shell echo '$(PARAMS_JSON)' | jq -r '.projector')
+EXPERIMENT := $(shell cat $(PARAMS_FILE) | shyaml get-value run_name)
+DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data.dataset)
 
 
 all: embeddings homology clustering selection vis
 	@echo "Run Complete"
-run: embeddings homology
-	@echo "Run Complete"
+
+setup:
+	@echo "Writing Config Files"
+	@python src/setup.py
+
+embeddings: setup
+	@echo "Generating Embeddings"
+	@python src/scripts/parallelize_embeddings.py
+
+homology:
+	@echo "Generating Persistence Diagrams"
+	@python scripts/homology_generator.py
+
+clustering:
+	@echo "Computing Topolical Distances"
+	@python scripts/clustering_generator.py
 
 selection:
 	@echo "Selecting Embeddings"
@@ -19,32 +32,6 @@ vis:
 	@echo "Generating Visualizations"
 	@python scripts/embedding_visualizations.py
 	@python scripts/clustering_visualizations.py
-
-embeddings:
-	@echo "Generating Embeddings"
-	@python scripts/embedding_generator.py
-
-homology:
-	@echo "Generating Persistence Diagrams"
-	@python scripts/homology_generator.py
-
-clustering:
-	@echo "Computing Topolical Distances"
-	@python scripts/clustering_generator.py
 clean:
-	@rm -rf data/${DATA_SET}/diagrams/${PROJECTOR}/
-	@rm -rf data/${DATA_SET}/EQC/${PROJECTOR}/
-	@rm -rf data/${DATA_SET}/projections/${PROJECTOR}/
-	@rm -rf data/${DATA_SET}/synopsis/${PROJECTOR}/
-
-clean-embeddings:
-	@rm -rf data/${DATA_SET}/projections/${PROJECTOR}/
-
-clean-diagrams:
-	@rm -rf data/${DATA_SET}/diagrams/${PROJECTOR}/
-
-clean-clustering:
-	@rm -rf data/${DATA_SET}/EQC/${PROJECTOR}/
-clean-data:
-	@rm -rf data/${DATA_SET}/
+	@rm -rf data/${DATA_SET}/${EXPERIMENT}/
 

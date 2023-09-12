@@ -1,0 +1,57 @@
+---
+run_name: New-TEST
+description: "Testing Refactored Implementation"
+data:
+  dataset:
+    - swiss_roll
+    - barbell
+  num_samples:
+    - 100
+    - 1000
+  num_clusters: 3
+  seed: 442
+
+embedding:
+  model:
+    - umap
+    - isomap
+  hyperparams:
+    n_neighbors:
+      - 10
+      - 15
+    init:
+      - "spectral"
+    dim:
+      - 2
+    min_dist:
+      - 0.1
+      - 0.5
+    early_exaggeration:
+      - 10
+      - 12
+      - 14
+    gamma:
+      - 0.1
+      - 0.25
+      - 0.5
+      - 0.75
+    metric:
+      - manhattan
+      - euclidean
+    reg:
+      - 0.001
+      - 0.01
+
+random_seed: 42
+
+topology:
+  homology_max_dim: 1
+  normalize: true
+  filtration: alpha
+  diagram_metric: landscape
+  dendrogram_cut: 0.01
+  linkage: average
+
+
+
+

@@ -1,6 +1,5 @@
 "Check the way diagrams are being read in when computing distance. Probably having the original space read in diagram -1"
 import argparse
-import json
 import os
 import pickle
 import sys
@@ -12,6 +11,7 @@ import plotly.figure_factory as ff
 import plotly.graph_objects as go
 import plotly.io as pio
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
 from plotly.subplots import make_subplots
 from scipy.cluster.hierarchy import linkage
 from scipy.spatial.distance import squareform
@@ -250,10 +250,10 @@ if __name__ == "__main__":
     sys.path.append(root + "src/")
     from utils import embedding_coloring, subplot_grid
 
-    JSON_PATH = os.getenv("params")
-    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
-    with open(JSON_PATH, "r") as f:
-        params_json = json.load(f)
+    YAML_PATH = os.getenv("params")
+    assert os.path.isfile(YAML_PATH), "Please configure .env to point to params.yaml"
+    with open(YAML_PATH, "r") as f:
+        params_json = OmegaConf.load(YAML_PATH)
 
     parser.add_argument(
         "-d",

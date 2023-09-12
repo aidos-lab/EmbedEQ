@@ -1,15 +1,28 @@
-"""Data set generator methods."""
+"""Data set loading & generator methods."""
 
 import os
+from dataclasses import dataclass
 
 import numpy as np
-from dotenv import load_dotenv
 
-from utils import assign_labels, load_local_data
+from loaders.factory import load_local_data
+from utils import assign_labels
 
-################################################################################################
-################                    Benchmark Datasets                          ################
-################################################################################################
+#  ╭──────────────────────────────────────────────────────────╮
+#  │Base Data Class                                           │
+#  ╰──────────────────────────────────────────────────────────╯
+
+
+@dataclass
+class BaseDataConfig:
+    generator: str
+    num_samples: int
+    seed: int = 100
+
+
+#  ╭──────────────────────────────────────────────────────────╮
+#  │Locally Stored Data                                       │
+#  ╰──────────────────────────────────────────────────────────╯
 
 
 def mnist(**kwargs):
@@ -25,11 +38,9 @@ def ipsc(**kwargs):
     return data, labels
 
 
-################################################################################################
-################                Sklearn Toy Datasets                            ################
-################################################################################################
-
-
+#  ╭──────────────────────────────────────────────────────────╮
+#  │Sklearn Data                                              │
+#  ╰──────────────────────────────────────────────────────────╯
 def iris(**kwargs):
     from sklearn.datasets import load_iris
 
@@ -66,9 +77,9 @@ def breast_cancer(**kwargs):
     return load_breast_cancer(return_X_y=True)
 
 
-################################################################################################
-################                    Shape Datasets                              ################
-################################################################################################
+#  ╭──────────────────────────────────────────────────────────╮
+#  │Manifolds                                                 │
+#  ╰──────────────────────────────────────────────────────────╯
 
 
 def swiss_roll(
@@ -108,7 +119,6 @@ def moons(N, **kwargs):
     return make_moons(N, random_state=kwargs["random_state"])
 
 
-# BREAKING RIPSER??
 def nested_circles(N, **kwargs):
     """Generate nested circles with labels."""
     from sklearn.datasets import make_circles

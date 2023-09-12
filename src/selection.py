@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import pickle
@@ -7,8 +6,9 @@ import sys
 
 import numpy as np
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
+from topology.EEQ import min_topological_distance
 
-from selection_criteria import *
 from utils import format_arguments
 
 
@@ -41,10 +41,10 @@ if __name__ == "__main__":
     root = os.getenv("root")
     sys.path.append(root + "src/")
 
-    JSON_PATH = os.getenv("params")
-    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
-    with open(JSON_PATH, "r") as f:
-        params_json = json.load(f)
+    YAML_PATH = os.getenv("params")
+    assert os.path.isfile(YAML_PATH), "Please configure .env to point to params.yaml"
+    with open(YAML_PATH, "r") as f:
+        params_json = OmegaConf.load(YAML_PATH)
 
     parser.add_argument(
         "-d",

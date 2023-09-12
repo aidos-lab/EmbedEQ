@@ -1,20 +1,39 @@
 "Cluster Hyperparameters based on the topology of the corresponding embedding."
 
-
 import argparse
-import json
 import logging
 import os
 import pickle
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
-from dotenv import load_dotenv
+from gtda.diagrams import PairwiseDistance
+from scipy.spatial import distance_matrix
 from sklearn.cluster import AgglomerativeClustering
 
-from topology import pairwise_distance
-from utils import format_arguments
+from loaders.factory import load_diagrams, load_parameter_file, project_root_dir
+from utils import gtda_pad
+
+
+def config_filter(cfg):
+    return (
+        cfg.data.generator == args.data
+        and cfg.model.name == args.projector
+        and args.num_samples == cfg.data.num_samples
+    )
+
+
+def pairwise_distance(
+    diagrams,
+    dims,
+    metric="bottleneck",
+):
+    dgms = gtda_pad(diagrams, dims)
+    distance_metric = PairwiseDistance(metric=metric, order=1)
+    distance_metric.fit(dgms)
+    distances = distance_metric.transform(dgms)
+
+    return distances
 
 
 def cluster_models(
@@ -36,58 +55,71 @@ def cluster_models(
 
 
 if __name__ == "__main__":
-
+    # Load Params
+    params = load_parameter_file()
+    root = project_root_dir()
     parser = argparse.ArgumentParser()
-    load_dotenv()
-    root = os.getenv("root")
-    JSON_PATH = os.getenv("params")
-    if os.path.isfile(JSON_PATH):
-        with open(JSON_PATH, "r") as f:
-            params_json = json.load(f)
-    else:
-        print("params.json file note found!")
 
+    parser.add_argument(
+        "-r",
+        "--run_name",
+        type=str,
+        default=params.run_name,
+        help="Identifier for config `yaml`.",
+    )
     parser.add_argument(
         "-d",
         "--data",
         type=str,
-        default=params_json["data_set"],
-        help="Specify the data set.",
+        default=params.data.dataset[0],
+        help="Dataset.",
     )
     parser.add_argument(
         "-p",
         "--projector",
         type=str,
-        default=params_json["projector"],
-        help="Set to the name of projector for dimensionality reduction. ",
+        default=params.embedding.model[0],
+        help="Choose the type of algorithm to cluster.",
+    )
+    parser.add_argument(
+        "-n",
+        "--num_samples",
+        type=int,
+        default=params.data.num_samples[0],
+        help="Choose the type of algorithm to cluster.",
     )
     parser.add_argument(
         "-m",
         "--metric",
         type=str,
-        default=params_json["diagram_metric"],
+        default=params.topology.diagram_metric,
         help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
+    )
+    parser.add_argument(
+        "-M",
+        "--homology_max_dim",
+        default=params.topology.homology_max_dim,
+        type=int,
+        help="Maximum homology dimension for Ripser.py",
     )
 
     parser.add_argument(
         "-l",
         "--linkage",
         type=str,
-        default=params_json["linkage"],
+        default=params.topology.linkage,
         help="Select linkage algorithm for building Agglomerative Clustering Model.",
     )
-
     parser.add_argument(
         "-c",
         "--dendrogram_cut",
         type=str,
-        default=params_json["dendrogram_cut"],
+        default=params.topology.dendrogram_cut,
         help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
     )
     parser.add_argument(
-        "-n",
         "--normalize",
-        default=params_json["normalize"],
+        default=params.topology.normalize,
         type=bool,
         help="Whether to use normalized topological distances.",
     )
@@ -103,21 +135,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    data_, projector_ = format_arguments([args.data, args.projector])
-
-    in_dir = os.path.join(
-        root,
-        "data/"
-        + data_
-        + "/"
-        + params_json["run_name"]
-        + "/diagrams/"
-        + projector_
-        + "/",
-    )
     out_dir = os.path.join(
         root,
-        "data/" + data_ + "/" + params_json["run_name"] + "/EQC/" + projector_ + "/",
+        "data/" + args.data + "/" + params.run_name + "/EQC/" + args.projector + "/",
     )
 
     if args.normalize:
@@ -125,17 +145,22 @@ if __name__ == "__main__":
     else:
         metric = args.metric
 
+    # LOAD DIAGRAMS
+    keys, diagrams = load_diagrams(condition=config_filter)
+    dims = tuple(range(params.topology.homology_max_dim + 1))
+
     # TOPOLOGICAL DISTANCES #
-    dims = tuple(range(params_json["homology_max_dim"] + 1))
-    keys, distances = pairwise_distance(in_dir, dims=dims, metric=args.metric)
-    distance_matrix = {"keys": keys, "distances": distances}
+    distances = pairwise_distance(diagrams, dims=dims, metric=args.metric)
+    distance_matrix_ = {"keys": keys, "distances": distances}
+
+    # SAVING DISTANCES
     distances_out_dir = os.path.join(out_dir, "distance_matrices")
     if not os.path.isdir(distances_out_dir):
         os.makedirs(distances_out_dir, exist_ok=True)
     distances_out_file = f"{metric}_pairwise_distances.pkl"
     distances_out_file = os.path.join(distances_out_dir, distances_out_file)
     with open(distances_out_file, "wb") as f:
-        pickle.dump(distance_matrix, f)
+        pickle.dump(distance_matrix_, f)
 
     # HIERARCHICHAL CLUSTERING #
     model = cluster_models(

@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import pickle
@@ -8,58 +7,49 @@ import sys
 import numpy as np
 from dotenv import load_dotenv
 from gtda.homology import VietorisRipsPersistence, WeakAlphaPersistence
+from omegaconf import OmegaConf
 from sklearn.metrics import pairwise_distances
 
 import data
+from loaders.factory import (
+    LoadClass,
+    load_config,
+    load_parameter_file,
+    project_root_dir,
+)
 from utils import format_arguments
 
 if __name__ == "__main__":
+    # Load Params
+    params = load_parameter_file()
+    root = project_root_dir()
     parser = argparse.ArgumentParser()
-    load_dotenv()
-    root = os.getenv("root")
-    JSON_PATH = os.getenv("params")
-    assert os.path.isfile(JSON_PATH), "Please configure .env to point to params.json"
-    with open(JSON_PATH, "r") as f:
-        params_json = json.load(f)
 
     parser.add_argument(
-        "-d",
-        "--data",
+        "-r",
+        "--run_name",
         type=str,
-        default=params_json["data_set"],
-        help="Specify the data set.",
-    )
-    parser.add_argument(
-        "-n",
-        "--num_samples",
-        default=params_json["num_samples"],
-        type=int,
-        help="Set number of samples in data set",
-    )
-    parser.add_argument(
-        "-p",
-        "--projector",
-        type=str,
-        default=params_json["projector"],
-        help="Set to the name of projector for dimensionality reduction. ",
-    )
-    parser.add_argument(
-        "-M",
-        "--homology_max_dim",
-        default=params_json["homology_max_dim"],
-        type=int,
-        help="Maximum homology dimension for Ripser.py",
+        default=params.run_name,
+        help="Identifier for config `yaml`.",
     )
     parser.add_argument(
         "-i",
         type=int,
         default=0,
-        help="Position in coordinate space.",
+        help="Identifier for config `yaml`.",
     )
+    parser.add_argument(
+        "-M",
+        "--homology_max_dim",
+        default=params.topology.homology_max_dim,
+        type=int,
+        help="Maximum homology dimension for Ripser.py",
+    )
+
     parser.add_argument(
         "-s",
         "--seed",
-        default=params_json["random_state"],
+        default=params.data.seed,
         type=int,
         help="Random Seed for reproducing Sklearn Datasets.",
     )
@@ -74,59 +64,66 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    data_, projector_ = format_arguments([args.data, args.projector])
+    folder = project_root_dir() + f"/experiments/{args.run_name}/configs/"
+    cfg = load_config(args.i, folder)
 
+    # Load/Generate Data
+    generator = getattr(data, cfg.data.generator)
+    logging.info(f"Using generator routine {generator}")
+    X, labels = generator(
+        N=cfg.data.num_samples,
+        n_clusters=params.data.num_clusters,
+        random_state=cfg.data.seed,
+    )
     # Original Space
     if args.i == -1:
         id_ = "original space"
-        generator = getattr(data, data_)
+        generator = getattr(data, cfg.data.generator)
         X, labels = generator(
             N=args.num_samples,
             random_state=args.seed,
-            n_clusters=params_json["num_clusters"],
+            n_clusters=params.data.num_clusters,
         )
         if len(X) > 100000:
             print("Data Set is too large to compute pairwise distances")
             sys.exit(-1)
 
     else:
-        in_file = f"{projector_}_{args.i}.pkl"
+        in_file = f"embedding_{args.i}.pkl"
         in_dir = os.path.join(
             root,
             "data/"
-            + data_
+            + cfg.data.generator
             + "/"
-            + params_json["run_name"]
+            + args.run_name
             + "/projections/"
-            + projector_
+            + cfg.model.name
             + "/",
         )
         in_file = os.path.join(in_dir, in_file)
         assert os.path.isfile(in_file), "Invalid Projection"
 
         with open(in_file, "rb") as f:
-            reference = pickle.load(f)
-        id_ = reference["hyperparams"]
-        X = reference["projection"]
+            D = pickle.load(f)
+            X = D["projection"]
 
-    if params_json["normalize"]:
+    if params.topology.normalize:
         if len(X) > 10000:
             print("Data Set is too large to compute pairwise distances")
             sys.exit(-1)
         else:
             D = pairwise_distances(X)
-
             max_D = D.max()
             X /= max_D
 
-    assert params_json["filtration"] in [
+    assert params.topology.filtration in [
         "rips",
         "alpha",
     ], "Only support Alpha and Vietoris-Rips filtrations currently"
 
-    if params_json["filtration"] == "rips":
+    if params.topology.filtration == "rips":
         PH = VietorisRipsPersistence
-    if params_json["filtration"] == "alpha":
+    if params.topology.filtration == "alpha":
         PH = WeakAlphaPersistence
 
     # Compute Homology
@@ -134,17 +131,17 @@ if __name__ == "__main__":
     model = PH(homology_dimensions=dims)
     X = X.reshape(1, *X.shape)
     dgms = np.squeeze(model.fit_transform(X))
-    results = {"diagram": dgms, "hyperparams": id_}
+    results = {"diagram": dgms}
 
     out_file = f"diagram_{args.i}.pkl"
     out_dir = os.path.join(
         root,
         "data/"
-        + data_
+        + cfg.data.generator
         + "/"
-        + params_json["run_name"]
+        + args.run_name
         + "/diagrams/"
-        + projector_
+        + cfg.model.name
         + "/",
     )
 
