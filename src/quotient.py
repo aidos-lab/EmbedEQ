@@ -8,18 +8,20 @@ import sys
 
 import numpy as np
 from gtda.diagrams import PairwiseDistance
-from scipy.spatial import distance_matrix
+from hdbscan import HDBSCAN
 from sklearn.cluster import AgglomerativeClustering
 
 from loaders.factory import load_diagrams, load_parameter_file, project_root_dir
-from utils import gtda_pad
+from utils import format_arguments, gtda_pad
 
 
 def config_filter(cfg):
+    """Filtering which models are clustered."""
+
     return (
         cfg.data.generator == args.data
         and cfg.model.name == args.projector
-        and args.num_samples == cfg.data.num_samples
+        and cfg.data.num_samples == args.num_samples
     )
 
 
@@ -41,7 +43,7 @@ def cluster_models(
     linkage="average",
     distance_threshold=0.5,
 ):
-
+    # Change to HDBSCAN
     model = AgglomerativeClustering(
         metric="precomputed",
         linkage=linkage,
@@ -135,6 +137,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
+    args.data, args.projector = format_arguments([args.data, args.projector])
+
     out_dir = os.path.join(
         root,
         "data/" + args.data + "/" + params.run_name + "/EQC/" + args.projector + "/",
@@ -144,9 +148,9 @@ if __name__ == "__main__":
         metric = f"normalized_{args.metric}"
     else:
         metric = args.metric
-
     # LOAD DIAGRAMS
     keys, diagrams = load_diagrams(condition=config_filter)
+
     dims = tuple(range(params.topology.homology_max_dim + 1))
 
     # TOPOLOGICAL DISTANCES #
@@ -157,7 +161,7 @@ if __name__ == "__main__":
     distances_out_dir = os.path.join(out_dir, "distance_matrices")
     if not os.path.isdir(distances_out_dir):
         os.makedirs(distances_out_dir, exist_ok=True)
-    distances_out_file = f"{metric}_pairwise_distances.pkl"
+    distances_out_file = f"{metric}_{args.num_samples}_pairwise_distances.pkl"
     distances_out_file = os.path.join(distances_out_dir, distances_out_file)
     with open(distances_out_file, "wb") as f:
         pickle.dump(distance_matrix_, f)
@@ -179,7 +183,7 @@ if __name__ == "__main__":
     model_out_dir = os.path.join(out_dir, "models")
     if not os.path.isdir(model_out_dir):
         os.makedirs(model_out_dir, exist_ok=True)
-    model_out_file = f"embedding_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl"
+    model_out_file = f"embedding_{args.num_samples}_clustering_{metric}_{args.linkage}-linkage_{args.dendrogram_cut}.pkl"
     model_out_file = os.path.join(model_out_dir, model_out_file)
 
     with open(model_out_file, "wb") as f:

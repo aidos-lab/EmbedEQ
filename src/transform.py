@@ -1,3 +1,5 @@
+"Homology Transform for Embeddings"
+
 import argparse
 import logging
 import os
@@ -67,48 +69,26 @@ if __name__ == "__main__":
     folder = project_root_dir() + f"/experiments/{args.run_name}/configs/"
     cfg = load_config(args.i, folder)
 
-    # Load/Generate Data
-    generator = getattr(data, cfg.data.generator)
-    logging.info(f"Using generator routine {generator}")
-    X, labels = generator(
-        N=cfg.data.num_samples,
-        n_clusters=params.data.num_clusters,
-        random_state=cfg.data.seed,
+    in_file = f"embedding_{args.i}.pkl"
+    in_dir = os.path.join(
+        root,
+        "data/"
+        + cfg.data.generator
+        + "/"
+        + args.run_name
+        + "/projections/"
+        + cfg.model.name
+        + "/",
     )
-    # Original Space
-    if args.i == -1:
-        id_ = "original space"
-        generator = getattr(data, cfg.data.generator)
-        X, labels = generator(
-            N=args.num_samples,
-            random_state=args.seed,
-            n_clusters=params.data.num_clusters,
-        )
-        if len(X) > 100000:
-            print("Data Set is too large to compute pairwise distances")
-            sys.exit(-1)
+    in_file = os.path.join(in_dir, in_file)
+    assert os.path.isfile(in_file), "Invalid Projection"
 
-    else:
-        in_file = f"embedding_{args.i}.pkl"
-        in_dir = os.path.join(
-            root,
-            "data/"
-            + cfg.data.generator
-            + "/"
-            + args.run_name
-            + "/projections/"
-            + cfg.model.name
-            + "/",
-        )
-        in_file = os.path.join(in_dir, in_file)
-        assert os.path.isfile(in_file), "Invalid Projection"
-
-        with open(in_file, "rb") as f:
-            D = pickle.load(f)
-            X = D["projection"]
+    with open(in_file, "rb") as f:
+        D = pickle.load(f)
+        X = D["projection"]
 
     if params.topology.normalize:
-        if len(X) > 10000:
+        if len(X) > 10005:
             print("Data Set is too large to compute pairwise distances")
             sys.exit(-1)
         else:

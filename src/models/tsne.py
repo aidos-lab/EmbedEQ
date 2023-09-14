@@ -1,45 +1,26 @@
-def tSNE(data, hyperparams, seed=0, **kwargs):
-    perplexity, ee, dim = hyperparams
-    operator = TSNE(
-        n_components=dim,
-        perplexity=perplexity,
-        early_exaggeration=ee,
-    )
-    projection = operator.fit_transform(data)
-    return projection
+from dataclasses import dataclass
+
+from sklearn.manifold import TSNE
+
+from .base import BaseConfig, BaseProjector
 
 
-def phate(data, hyperparams, seed=0, **kwargs):
-    knn, gamma, metric, dim = hyperparams
-    operator = PHATE(
-        n_components=dim,
-        knn=knn,
-        gamma=gamma,
-        knn_dist=metric,
-        random_state=seed,
-        verbose=0,
-    )
-    projection = operator.fit_transform(data)
-    return projection
+@dataclass
+class TSNEConfig(BaseConfig):
+    n_neighbors: int = 15
+    early_exaggeration: int = 10
+    dim: int = 2
 
 
-def isomap(data, hyperparams, seed=0, **kwargs):
-    n, m, dim = hyperparams
-    operator = Isomap(
-        n_components=dim,
-        n_neighbors=n,
-        metric=m,
-    )
-    projection = operator.fit_transform(data)
-    return projection
+class TSNEProjector(BaseProjector):
+    def __init__(self, config: TSNEConfig):
+        super().__init__(config)
 
+    def project(self, data):
+        operator = TSNE(
+            perplexity=self.config.n_neighbors,
+            early_exaggeration=self.config.early_exaggeration,
+            n_components=self.config.dim,
+        )
 
-def LLE(data, hyperparams, seed=0, **kwargs):
-    n, reg, dim = hyperparams
-    operator = LocallyLinearEmbedding(
-        n_components=dim,
-        n_neighbors=n,
-        reg=reg,
-    )
-    projection = operator.fit_transform(data)
-    return projection
+        return operator.fit_transform(data)

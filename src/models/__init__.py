@@ -15,4 +15,7 @@ os.environ["KMP_WARNINGS"] = "off"
 
 from .base import BaseConfig, BaseProjector
 from .isomap import IsomapConfig, IsomapProjector
+from .lle import LLEConfig, LLEProjector
+from .phate import PHATEConfig, PHATEProjector
+from .tsne import TSNEConfig, TSNEProjector
 from .umap import UMAPConfig, UMAPProjector

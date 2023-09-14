@@ -41,5 +41,17 @@ class ModelConfig:
 #  │Config Mappings                                           │
 #  ╰──────────────────────────────────────────────────────────╯
 
-configs = {"umap": "UMAPConfig", "isomap": "IsomapConfig"}
-projectors = {"umap": "UMAPProjector", "isomap": "IsomapProjector"}
+configs = {
+    "umap": "UMAPConfig",
+    "isomap": "IsomapConfig",
+    "phate": "PHATEConfig",
+    "lle": "LLEConfig",
+    "tsne": "TSNEConfig",
+}
+projectors = {
+    "umap": "UMAPProjector",
+    "isomap": "IsomapProjector",
+    "phate": "PHATEProjector",
+    "lle": "LLEProjector",
+    "tsne": "TSNEProjector",
+}
