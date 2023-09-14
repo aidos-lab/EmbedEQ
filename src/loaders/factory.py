@@ -98,7 +98,7 @@ def load_diagrams(condition):
             + "/",
         )
         in_file = os.path.join(in_dir, f"diagram_{cfg.meta.id}.pkl")
-        assert os.path.isfile(in_file), "Invalid Projection"
+        assert os.path.isfile(in_file), "Invalid Transform"
 
         with open(in_file, "rb") as f:
             data = pickle.load(f)
@@ -108,31 +108,40 @@ def load_diagrams(condition):
     return keys, diagrams
 
 
-# def subplot_grid(dir, sample_size, metric):
-#     hashmap = {}
-#     x, y = [], []
-#     coords = []
-#     for file in os.listdir(dir):
-#         with open(f"{dir}/{file}", "rb") as f:
-#             D = pickle.load(f)
+def load_distances(data, projector, metric, num_samples):
+    root = project_root_dir()
+    params = load_parameter_file()
+    distances_in_file = os.path.join(
+        root,
+        "data/"
+        + data
+        + "/"
+        + params.run_name
+        + "/EQC/"
+        + projector
+        + "/distance_matrices/"
+        + f"{metric}_{num_samples}_pairwise_distances.pkl",
+    )
+    with open(distances_in_file, "rb") as D:
+        reference = pickle.load(D)
+    return reference["keys"], reference["distances"]
 
-#         projection = D["projection"]
-#         params = D["hyperparams"]
-#         print(params)
-#         print(len(projection))
-#         if len(projection) == sample_size:
-#             print(params[2])
-#             if params[2] == metric:
-#                 print("SELECTING")
-#             coords.append(params)
-#             hashmap[str(params).replace(" ", "")] = projection
 
-#             if params[0] not in x:
-#                 x.append(params[0])
-#             if params[1] not in y:
-#                 y.append(params[1])
+def load_model(data, projector, metric, num_samples, linkage, dendrogram_cut):
+    root = project_root_dir()
+    params = load_parameter_file()
+    model_in_file = os.path.join(
+        root,
+        "data/"
+        + data
+        + "/"
+        + params.run_name
+        + "/EQC/"
+        + projector
+        + "/models/"
+        + f"embedding_{num_samples}_clustering_{metric}_{linkage}-linkage_{dendrogram_cut}.pkl",
+    )
 
-#     x.sort()
-#     y.sort()
-#     coords.sort()
-#     return hashmap, x, y, coords
+    with open(model_in_file, "rb") as M:
+        model = pickle.load(M)["model"]
+    return model

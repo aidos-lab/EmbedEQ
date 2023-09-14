@@ -5,10 +5,10 @@ EXPERIMENT := $(shell cat $(PARAMS_FILE) | shyaml get-value run_name)
 DATASETS := $(shell cat $(PARAMS_FILE) | shyaml get-value data.dataset)
 
 
-all: embeddings homology clustering selection vis
+all: embeddings homology-transform quotient collapse 
 	@echo "Run Complete"
 
-setup:
+setup: 
 	@echo "Writing Config Files"
 	@python src/setup.py
 
@@ -16,22 +16,23 @@ embeddings: setup
 	@echo "Generating Embeddings"
 	@python src/scripts/parallelize_embeddings.py
 
-homology:
+homology-transform:
 	@echo "Generating Persistence Diagrams"
-	@python scripts/homology_generator.py
+	@python src/scripts/parallelize_transforms.py
 
-clustering:
+quotient:
 	@echo "Computing Topolical Distances"
-	@python scripts/clustering_generator.py
+	@python src/scripts/parallelize_quotients.py
 
-selection:
+collapse:
 	@echo "Selecting Embeddings"
-	@python scripts/selection_generator.py
+	@python src/scripts/parallelize_collapse.py
 
 vis:
 	@echo "Generating Visualizations"
 	@python scripts/embedding_visualizations.py
-	@python scripts/clustering_visualizations.py
+	@python scripts/quotient_visualizations.py
 clean:
-	@rm -rf data/${DATA_SET}/${EXPERIMENT}/
+	@rm -rf data/*/${EXPERIMENT}/
+	@rm -rf experiments/${EXPERIMENT}/
 
