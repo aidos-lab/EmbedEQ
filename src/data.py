@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from loaders.factory import load_local_data
-from utils import assign_labels
+from utils import assign_labels, generate_sampling_mask
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │Base Data Class                                           │
@@ -28,14 +28,19 @@ class BaseDataConfig:
 def mnist(**kwargs):
     bundle = load_local_data("mnist")
     data, labels = bundle["data"], bundle["labels"]
-    return data, labels
+    mask = range(len(data))
+    if kwargs["N"]:
+        mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    return data[mask], labels[mask]
 
 
 def ipsc(**kwargs):
     data = load_local_data("ipsc")["data"]
     labels = np.zeros(len(data))
-
-    return data, labels
+    mask = range(len(data))
+    if kwargs["N"]:
+        mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    return data[mask], labels[mask]
 
 
 #  ╭──────────────────────────────────────────────────────────╮

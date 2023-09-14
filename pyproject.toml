@@ -26,6 +26,9 @@ omegaconf = "^2.3.0"
 shyaml = "^0.6.2"
 
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.25.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

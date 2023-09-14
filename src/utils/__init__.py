@@ -7,6 +7,12 @@ from sklearn.neighbors import kneighbors_graph
 #  ╰──────────────────────────────────────────────────────────╯
 
 
+def generate_sampling_mask(N, num_samples, random_state):
+    np.random.seed(random_state)
+    mask = np.random.choice(range(N), num_samples)
+    return mask
+
+
 def assign_labels(data, n_clusters, k=10):
     """Assign Labels for Sklearn Data Sets based on KNN Graphs"""
 
