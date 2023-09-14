@@ -19,12 +19,9 @@ if __name__ == "__main__":
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "/src/")
-    from loaders.factory import project_root_dir
+    from loaders.factory import load_parameter_file, project_root_dir
 
-    YAML_PATH = os.getenv("params")
-    assert os.path.isfile(YAML_PATH), "Please configure .env to point to params.yaml"
-    with open(YAML_PATH, "r") as f:
-        params = OmegaConf.load(YAML_PATH)
+    params = load_parameter_file()
 
     folder = project_root_dir() + f"/experiments/{params.run_name}/configs/"
 

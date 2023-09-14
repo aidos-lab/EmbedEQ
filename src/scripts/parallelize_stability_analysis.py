@@ -1,3 +1,5 @@
+"Project cleaned data using UMAP."
+
 import logging
 import os
 import subprocess
@@ -5,10 +7,13 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from dotenv import load_dotenv
-from omegaconf import OmegaConf
 from tqdm import tqdm
 
+n_cpus = int(os.cpu_count() / 2)
+
+
 if __name__ == "__main__":
+    # Load Params
     logging.basicConfig(
         format="%(asctime)s.%(msecs)03d  [%(levelname)-10s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -17,37 +22,33 @@ if __name__ == "__main__":
     load_dotenv()
     root = os.getenv("root")
     sys.path.append(root + "/src/")
-    from loaders.factory import load_parameter_file, project_root_dir
+    from loaders.factory import load_parameter_file
 
     params = load_parameter_file()
 
-    folder = project_root_dir() + f"/experiments/{params.run_name}/configs/"
-    num_loops = len(os.listdir(folder))
-
-    # Write Coordinates to JSON
-    logging.info(f"Data Sets: {params.data.dataset}")
-    logging.info(
-        f"Computing Persistent Homology with `{params.topology.filtration}` Filtration"
-    )
-    logging.info(f"Maximum Homology Dim: {params.topology.homology_max_dim}")
-    logging.info(f"Number of diagrams to generate: {num_loops}")
-
     # Subprocesses
-    transformer = os.path.join(root, "src/transform.py")
-    # Running Grid Search in Parallel
-    subprocesses = []
-    ## GRID SEARCH PROJECTIONS
-    for i in range(num_loops):
-        cmd = [
-            "python",
-            f"{transformer}",
-            f"-i {i}",
-        ]
-        subprocesses.append(cmd)
+    num_loops = len(params.data.dataset) * len(params.embedding.model)
+    logging.info(f"Beginning Hyperparameter Stability Analysis")
+    logging.info(f"Projector: {params.embedding.model}")
+    logging.info(f"Data Sets: {params.data.dataset}")
+    logging.info(f"Sample Sizes: {params.data.num_samples}")
 
-    # Running processes in Parallel
-    # TODO: optimize based on max_workers
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    clusterer = os.path.join(root, "src/analysis/stability.py")
+    subprocesses = []
+    ###Generate Pearson Correlation
+    for alg in params.embedding.model:
+        for dataset in params.data.dataset:
+            cmd = [
+                "python",
+                f"{clusterer}",
+                f"-d {dataset}",
+                f"-p {alg}",
+            ]
+            subprocesses.append(cmd)
+
+        # Running processes in Parallel
+        # TODO: optimize based on max_workers
+    with ProcessPoolExecutor(max_workers=n_cpus) as executor:
         futures = [executor.submit(subprocess.run, cmd) for cmd in subprocesses]
         # Setting Progress bar to track number of completed subprocesses
         progress_bar = tqdm(total=num_loops, desc="Progress", unit="subprocess")
