@@ -10,6 +10,7 @@ class TSNEConfig(BaseConfig):
     n_neighbors: int = 15
     early_exaggeration: int = 10
     dim: int = 2
+    metric: str = "euclidean"
 
 
 class TSNEProjector(BaseProjector):
@@ -21,6 +22,7 @@ class TSNEProjector(BaseProjector):
             perplexity=self.config.n_neighbors,
             early_exaggeration=self.config.early_exaggeration,
             n_components=self.config.dim,
+            metric=self.config.metric,
         )
 
         return operator.fit_transform(data)
