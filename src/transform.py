@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     # Compute Homology
     dims = tuple(range(args.homology_max_dim + 1))
-    model = PH(homology_dimensions=dims)
+    model = PH(homology_dimensions=dims, infinity_values=1e5)
     X = X.reshape(1, *X.shape)
     dgms = np.squeeze(model.fit_transform(X))
     results = {"diagram": dgms}

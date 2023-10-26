@@ -28,10 +28,17 @@ collapse:
 	@echo "Selecting Embeddings"
 	@python src/scripts/parallelize_collapse.py
 
+stability-analysis:
+	@echo "Analyzing Stability"
+	@python src/scripts/parallelize_stability_analysis.py
+sensitivity-analysis:
+	@echo "Analyzing sensitivity"
+	@python src/scripts/parallelize_sensitivity_analysis.py
+
 vis:
 	@echo "Generating Visualizations"
-	@python scripts/embedding_visualizations.py
-	@python scripts/quotient_visualizations.py
+	@python src/vis/embedding_visualizations.py
+	@python src/vis/quotient_visualizations.py
 clean:
 	@rm -rf data/*/${EXPERIMENT}/
 	@rm -rf experiments/${EXPERIMENT}/

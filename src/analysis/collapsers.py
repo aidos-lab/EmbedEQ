@@ -28,3 +28,7 @@ def min_topological_distance(keys, labels, distances, **kwargs):
         idx = np.where(original_distances == min_dist)[0][0]
         selection[label] = keys[idx]
     return selection
+
+
+def average_representation():
+    """Select landscape closest to average"""

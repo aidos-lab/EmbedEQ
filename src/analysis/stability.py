@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from hdbscan import HDBSCAN
 from scipy.stats import pearsonr
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import adjusted_mutual_info_score, adjusted_rand_score
 
 if __name__ == "__main__":
 
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     pairs = list(itertools.combinations(matrices, 2))
 
     for x, y in pairs:
-        logger.info(f"Correlation between sample sizes ({x,y})")
+        logger.info(f"({x,y})")
         row_correlations = []
         X = matrices[x]
         Y = matrices[y]
@@ -139,6 +138,10 @@ if __name__ == "__main__":
             val = np.min(result)
             row_correlations.append(val)
         logger.info(f"Average over all rows: {np.mean(row_correlations)}")
+        logger.info(f"Median Correlation: {np.median(row_correlations)}")
+        logger.info(f"Max Correlation: {np.max(row_correlations)}")
+        logger.info(f"Min Correlation: {np.min(row_correlations)} ")
+        logger.info("\n")
 
     # for k in range(2, 5):
     #     print(f"K = {k}")

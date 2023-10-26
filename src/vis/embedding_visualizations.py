@@ -36,7 +36,7 @@ def visualize_projections(
         The Plotly figure object representing the UMAP grid visualization.
     """
     print(f"len labels: {len(labels)}")
-    hashmap, x, y, coords = subplot_grid(dir, sample_size=len(labels), metric=metric)
+    hashmap, x, y, coords = make_subplots(dir, sample_size=len(labels), metric=metric)
 
     print(dir)
 
@@ -167,41 +167,73 @@ if __name__ == "__main__":
     root = os.getenv("root")
     sys.path.append(root + "src/")
     import data as data
-    from utils import subplot_grid
+    from loaders.factory import load_parameter_file
 
-    YAML_PATH = os.getenv("params")
-    assert os.path.isfile(YAML_PATH), "Please configure .env to point to params.yaml"
-    with open(YAML_PATH, "r") as f:
-        params_json = OmegaConf.load(YAML_PATH)
-
+    params = load_parameter_file()
+    parser.add_argument(
+        "-r",
+        "--run_name",
+        type=str,
+        default=params.run_name,
+        help="Identifier for config `yaml`.",
+    )
     parser.add_argument(
         "-d",
         "--data",
         type=str,
-        default=params_json["data_set"],
-        help="Specify the data set.",
-    )
-    parser.add_argument(
-        "-n",
-        "--num_samples",
-        default=params_json["num_samples"],
-        type=int,
-        help="Set number of samples in data set",
+        default=params.data.dataset[0],
+        help="Dataset.",
     )
     parser.add_argument(
         "-p",
         "--projector",
         type=str,
-        default=params_json["projector"],
-        help="Set to the name of projector for dimensionality reduction. ",
+        default=params.embedding.model[0],
+        help="Choose the type of algorithm to cluster.",
+    )
+    parser.add_argument(
+        "-n",
+        "--num_samples",
+        type=int,
+        default=params.data.num_samples[0],
+        help="Choose the type of algorithm to cluster.",
     )
     parser.add_argument(
         "-m",
         "--metric",
         type=str,
-        default=params_json["hyperparams"]["metric"],
-        help="Metric that determines embeddings.",
+        default=params.topology.diagram_metric,
+        help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
     )
+    parser.add_argument(
+        "-M",
+        "--homology_max_dim",
+        default=params.topology.homology_max_dim,
+        type=int,
+        help="Maximum homology dimension for Ripser.py",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--linkage",
+        type=str,
+        default=params.topology.linkage,
+        help="Select linkage algorithm for building Agglomerative Clustering Model.",
+    )
+    parser.add_argument(
+        "-c",
+        "--dendrogram_cut",
+        type=str,
+        default=params.topology.dendrogram_cut,
+        help="Select metric (that is supported by Giotto) to compare persistence daigrams.",
+    )
+    parser.add_argument(
+        "--normalize",
+        default=params.topology.normalize,
+        type=bool,
+        help="Whether to use normalized topological distances.",
+    )
+
     parser.add_argument(
         "-v",
         "--Verbose",
@@ -213,7 +245,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     this = sys.modules[__name__]
 
-    num_loops = len(args.data) * len(args.projector) * len(args.num_samples)
+    num_loops = len(args.data) * len(args.projector)
 
     logging.info("Generating Embedding Visualizations")
     logging.info(f"Projectors: {args.projector}")
@@ -230,7 +262,7 @@ if __name__ == "__main__":
                         "data/"
                         + data_
                         + "/"
-                        + params_json["run_name"]
+                        + params.run_name
                         + "/projections/"
                         + alg
                         + "/",
@@ -239,8 +271,8 @@ if __name__ == "__main__":
                     generator = getattr(data, data_)
                     X, labels = generator(
                         N=sample_size,
-                        random_state=params_json["random_state"],
-                        n_clusters=params_json["num_clusters"],
+                        random_state=params.data.seed,
+                        n_clusters=params.data.num_clusters,
                     )
                     try:
                         data_figure = visualize_data(X, labels)
@@ -252,12 +284,7 @@ if __name__ == "__main__":
                     out_file = f"{data_}_{sample_size}pts_{m}_embedding_summary.html"
                     out_dir = os.path.join(
                         root,
-                        "data/"
-                        + data_
-                        + "/"
-                        + params_json["run_name"]
-                        + "/synopsis/"
-                        + alg,
+                        "data/" + data_ + "/" + params["run_name"] + "/synopsis/" + alg,
                     )
 
                     if not os.path.isdir(out_dir):

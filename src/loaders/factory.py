@@ -4,6 +4,7 @@ import shutil
 from dataclasses import fields
 
 import numpy as np
+import omegaconf
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
@@ -76,9 +77,38 @@ def load_configs_for_clustering(condition):
     num_files = len(os.listdir(folder))
     for i in range(num_files):
         cfg = load_config(i, folder)
-        if condition(cfg):
-            configs.append(cfg)
+        try:
+            if condition(cfg):
+                configs.append(cfg)
+        except omegaconf.errors.ConfigAttributeError as e:
+            print("Config Attribute Error- Check sensitivity filter")
     return configs
+
+
+def load_embedding(i):
+    root = project_root_dir()
+    params = load_parameter_file()
+    folder = root + f"/experiments/{params.run_name}/configs/"
+    cfg = load_config(i, folder)
+
+    in_file = f"embedding_{i}.pkl"
+    in_dir = os.path.join(
+        root,
+        "data/"
+        + cfg.data.generator
+        + "/"
+        + cfg.meta.name
+        + "/projections/"
+        + cfg.model.name
+        + "/",
+    )
+    in_file = os.path.join(in_dir, in_file)
+    assert os.path.isfile(in_file), "Invalid Projection"
+
+    with open(in_file, "rb") as f:
+        D = pickle.load(f)
+        X = D["projection"]
+    return X
 
 
 def load_diagrams(condition):

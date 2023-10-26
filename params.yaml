@@ -1,57 +1,60 @@
----
-run_name: New-TEST
-description: "Testing Refactored Implementation"
+run_name: BreastCancer-Diabetes
+description: Are parameters stable here?
 data:
   dataset:
-    - swiss_roll
-    - barbell
+  - diabetes
+  - breast_cancer
   num_samples:
-    - 100
-    - 1000
-  num_clusters: 3
+  - 100
+  - 200
+  - 300
+  - 400
+  num_clusters: 10
   seed: 442
-
 embedding:
   model:
-    - umap
-    - isomap
+  - umap
+  - isomap
+  - phate
+  - lle
+  - tsne
   hyperparams:
     n_neighbors:
-      - 10
-      - 15
+    - 10
+    - 15
+    - 20
+    - 25
+    - 30
+    - 35
     init:
-      - "spectral"
+    - spectral
     dim:
-      - 2
+    - 2
     min_dist:
-      - 0.1
-      - 0.5
+    - 0.1
+    - 0.5
+    - 0.8
     early_exaggeration:
-      - 10
-      - 12
-      - 14
+    - 10
+    - 12
+    - 14
     gamma:
-      - 0.1
-      - 0.25
-      - 0.5
-      - 0.75
+    - 0.1
+    - 0.25
+    - 0.5
+    - 0.75
     metric:
-      - manhattan
-      - euclidean
+    - manhattan
+    - euclidean
+    - chebyshev
     reg:
-      - 0.001
-      - 0.01
-
+    - 0.001
+    - 0.01
 random_seed: 42
-
 topology:
   homology_max_dim: 1
-  normalize: true
+  normalize: false
   filtration: alpha
   diagram_metric: landscape
   dendrogram_cut: 0.01
   linkage: average
-
-
-
-

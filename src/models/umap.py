@@ -8,7 +8,7 @@ from .base import BaseConfig, BaseProjector
 @dataclass
 class UMAPConfig(BaseConfig):
     n_neighbors: int = 15
-    min_dist: float = 0
+    min_dist: float = 0.1
     init: str = "spectral"
     metric: str = "euclidean"
     dim: int = 2

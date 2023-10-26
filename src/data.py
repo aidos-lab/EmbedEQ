@@ -1,7 +1,7 @@
 """Data set loading & generator methods."""
 
-import os
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -16,7 +16,7 @@ from utils import assign_labels, generate_sampling_mask
 @dataclass
 class BaseDataConfig:
     generator: str
-    num_samples: int
+    num_samples: Any
     seed: int = 100
 
 
@@ -29,8 +29,8 @@ def mnist(**kwargs):
     bundle = load_local_data("mnist")
     data, labels = bundle["data"], bundle["labels"]
     mask = range(len(data))
-    if kwargs["N"]:
-        mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    # if kwargs["N"] is not None:
+    #     mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
     return data[mask], labels[mask]
 
 
@@ -38,8 +38,8 @@ def ipsc(**kwargs):
     data = load_local_data("ipsc")["data"]
     labels = np.zeros(len(data))
     mask = range(len(data))
-    if kwargs["N"]:
-        mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    # if kwargs["N"] is not None:
+    #     mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
     return data[mask], labels[mask]
 
 
@@ -49,13 +49,21 @@ def ipsc(**kwargs):
 def iris(**kwargs):
     from sklearn.datasets import load_iris
 
-    return load_iris(return_X_y=True)
+    data, labels = load_iris(return_X_y=True)
+    mask = range(len(data))
+    # if kwargs["N"] is not None:
+    #     mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    return data[mask], labels[mask]
 
 
 def diabetes(**kwargs):
     from sklearn.datasets import load_diabetes
 
-    return load_diabetes(return_X_y=True)
+    data, labels = load_diabetes(return_X_y=True)
+    mask = range(len(data))
+    # if kwargs["N"] is not None:
+    #     mask = generate_sampling_mask(len(data), kwargs["N"], kwargs["random_state"])
+    return data[mask], labels[mask]
 
 
 def digits(**kwargs):
